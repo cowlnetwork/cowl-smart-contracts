@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "cep18",
+    "cep18-test-contract",
+    "tests",
+]
+default-members = [
+    "cep18",
+    "cep18-test-contract",
+    "tests",
+]
+
+[profile.release]
+codegen-units = 1
+lto = true
