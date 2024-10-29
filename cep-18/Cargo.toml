@@ -1,0 +1,28 @@
+[package]
+name = "cowl-token"
+version = "1.0.0"
+authors = ["COWL Team"]
+edition = "2021"
+
+[dependencies]
+casper-contract = "3.0.0"
+casper-types = "3.0.0"
+casper-erc20 = "0.3.0"
+hex = { version = "0.4.3", default-features = false }
+base64 = { version = "0.13.0", default-features = false }
+
+[[bin]]
+name = "cowl_token"
+path = "src/main.rs"
+bench = false
+doctest = false
+test = false
+
+[features]
+default = ["std"]
+std = ["casper-contract/std", "casper-types/std"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
