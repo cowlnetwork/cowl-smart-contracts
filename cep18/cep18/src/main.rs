@@ -12,7 +12,17 @@ mod events;
 mod modalities;
 mod utils;
 mod vesting;
-use vesting::{init_vesting, check_vesting_transfer};
+use vesting::{
+    init_vesting, 
+    check_vesting_transfer,
+    get_treasury_vesting_details,
+    get_team_vesting_details,
+    get_staking_vesting_details,
+    get_investor_vesting_details,
+    get_network_vesting_details,
+    get_marketing_vesting_details,
+    get_airdrop_vesting_details,
+};
 
 use alloc::{
     collections::BTreeMap,
@@ -470,6 +480,25 @@ pub extern "C" fn change_security() {
         sec_change_map: badge_map,
     }));
 }
+
+#[no_mangle]
+pub extern "C" fn vesting_details() {
+    let vesting_type: String = runtime::get_named_arg("vesting_type");
+    
+    let result = match vesting_type.as_str() {
+        "treasury" => get_treasury_vesting_details(),
+        "team" => get_team_vesting_details(),
+        "staking" => get_staking_vesting_details(),
+        "investor" => get_investor_vesting_details(),
+        "network" => get_network_vesting_details(),
+        "marketing" => get_marketing_vesting_details(),
+        "airdrop" => get_airdrop_vesting_details(),
+        _ => runtime::revert(Cep18Error::InvalidVestingType),
+    };
+    
+    runtime::ret(CLValue::from_t(result).unwrap_or_revert());
+}
+
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 

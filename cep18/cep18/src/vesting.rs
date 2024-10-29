@@ -9,6 +9,8 @@ use crate::{
     utils::get_uref,
 };
 
+use casper_types::{CLTyped, bytesrepr::{ToBytes, FromBytes}};
+
 // Vesting durations
 const MONTH_IN_SECONDS: u64 = 2_628_000; // 30.4375 days average
 const YEAR_IN_SECONDS: u64 = 31_536_000;  // 365 days
@@ -79,7 +81,7 @@ pub struct VestingStatus {
 }
 
 impl VestingStatus {
-    fn new(
+    pub fn new(
         total_amount: U256,
         vested_amount: U256,
         is_fully_vested: bool,
@@ -469,4 +471,67 @@ pub fn get_team_address() -> Key {
     storage::read(get_uref(TEAM_ADDRESS_KEY))
         .unwrap_or_revert()
         .unwrap_or_revert()
+}
+
+pub fn get_treasury_vesting_details() -> (U256, U256, bool) {
+    let status = get_treasury_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_team_vesting_details() -> (U256, U256, bool) {
+    let status = get_team_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_staking_vesting_details() -> (U256, U256, bool) {
+    let status = get_staking_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_investor_vesting_details() -> (U256, U256, bool) {
+    let status = get_investor_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_network_vesting_details() -> (U256, U256, bool) {
+    let status = get_network_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_marketing_vesting_details() -> (U256, U256, bool) {
+    let status = get_marketing_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
+}
+
+pub fn get_airdrop_vesting_details() -> (U256, U256, bool) {
+    let status = get_airdrop_status();
+    (
+        status.total_amount,
+        status.vested_amount,
+        status.is_fully_vested
+    )
 }

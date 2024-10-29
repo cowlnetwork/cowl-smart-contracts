@@ -50,8 +50,8 @@ pub enum Cep18Error {
     MissingPackageHashForUpgrade = 60019,
     /// Transfer blocked by vesting schedule
     VestingLocked = 60020,
-    /// Error in vesting calculation
-    VestingError = 60021,
+    /// Invalid vesting type specified
+    InvalidVestingType = 60021,
 }
 
 impl From<Cep18Error> for ApiError {
