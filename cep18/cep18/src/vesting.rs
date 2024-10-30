@@ -21,7 +21,6 @@ use crate::constants::{
     NETWORK_ADDRESS, MARKETING_ADDRESS, AIRDROP_ADDRESS,
 };
 
-use casper_types::{CLTyped, bytesrepr::{ToBytes, FromBytes}};
 
 // Vesting durations
 const MONTH_IN_SECONDS: u64 = 2_628_000; // 30.4375 days average
@@ -52,7 +51,6 @@ pub struct VestingAllocation {
 
 // Structure to hold vesting initialization data
 struct VestingInit {
-    address_key: &'static str,
     percentage: u8,
 }
 
@@ -64,6 +62,14 @@ pub struct VestingStatus {
     pub vesting_duration: u64,
     pub time_until_next_release: u64,
     pub monthly_release: U256,
+}
+
+// Add this struct to hold address information
+#[derive(Clone, Copy)]
+pub struct VestingAddressInfo {
+    pub address: Key,
+    pub address_type: &'static str,
+    pub duration: u64,
 }
 
 impl VestingStatus {
@@ -86,6 +92,74 @@ impl VestingStatus {
     }
 }
 
+pub fn get_all_vesting_addresses() -> Vec<VestingAddressInfo> {
+    [
+        VestingAddressInfo {
+            address: storage::read(get_uref(TREASURY_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: TREASURY_ADDRESS,
+            duration: TREASURY_LOCK_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(TEAM_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: TEAM_ADDRESS,
+            duration: TEAM_VESTING_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(STAKING_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: STAKING_ADDRESS,
+            duration: STAKING_VESTING_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(INVESTOR_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: INVESTOR_ADDRESS,
+            duration: INVESTOR_VESTING_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(NETWORK_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: NETWORK_ADDRESS,
+            duration: NETWORK_VESTING_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(MARKETING_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: MARKETING_ADDRESS,
+            duration: MARKETING_VESTING_DURATION,
+        },
+        VestingAddressInfo {
+            address: storage::read(get_uref(AIRDROP_ADDRESS))
+                .unwrap_or_revert()
+                .unwrap_or_revert(),
+            address_type: AIRDROP_ADDRESS,
+            duration: AIRDROP_VESTING_DURATION,
+        },
+    ].to_vec()
+}
+
+// Helper function to find if an address is a vesting address
+pub fn is_vesting_address(address: &Key) -> bool {
+    get_all_vesting_addresses()
+        .iter()
+        .any(|info| &info.address == address)
+}
+
+// Helper function to get vesting info for a specific address
+pub fn get_vesting_info(address: &Key) -> Option<VestingAddressInfo> {
+    get_all_vesting_addresses()
+        .into_iter()
+        .find(|info| &info.address == address)
+}
+
 pub fn calculate_vesting_allocations(
     initial_supply: U256,
     treasury_address: Key,
@@ -98,31 +172,24 @@ pub fn calculate_vesting_allocations(
 ) -> Vec<VestingAllocation> {
     let vestings = [
         (treasury_address, VestingInit {
-            address_key: TREASURY_ADDRESS,
             percentage: 50,
         }),
         (team_address, VestingInit {
-            address_key: TEAM_ADDRESS,
             percentage: 7,
         }),
         (staking_address, VestingInit {
-            address_key: STAKING_ADDRESS,
             percentage: 20,
         }),
         (investor_address, VestingInit {
-            address_key: INVESTOR_ADDRESS,
             percentage: 10,
         }),
         (network_address, VestingInit {
-            address_key: NETWORK_ADDRESS,
             percentage: 5,
         }),
         (marketing_address, VestingInit {
-            address_key: MARKETING_ADDRESS,
             percentage: 5,
         }),
         (airdrop_address, VestingInit {
-            address_key: AIRDROP_ADDRESS,
             percentage: 3,
         }),
     ];
@@ -196,70 +263,6 @@ fn calculate_monthly_release(total_amount: U256, duration_months: u64) -> U256 {
     total_amount
         .checked_div(U256::from(duration_months))
         .unwrap_or_revert_with(Cep18Error::Overflow)
-}
-
-pub fn init_vesting(
-    total_supply: U256,
-    treasury_address: Key,
-    team_address: Key,
-    staking_address: Key,
-    investor_address: Key,
-    network_address: Key,
-    marketing_address: Key,
-    airdrop_address: Key,
-) {
-    let start_time: u64 = runtime::get_blocktime().into();
-
-    // Define all vestings
-    let vestings = [
-        (treasury_address, VestingInit {
-            address_key: TREASURY_ADDRESS,
-            percentage: 50,
-        }),
-        (team_address, VestingInit {
-            address_key: TEAM_ADDRESS,
-            percentage: 7,
-        }),
-        (staking_address, VestingInit {
-            address_key: STAKING_ADDRESS,
-            percentage: 20,
-        }),
-        (investor_address, VestingInit {
-            address_key: INVESTOR_ADDRESS,
-            percentage: 10,
-        }),
-        (network_address, VestingInit {
-            address_key: NETWORK_ADDRESS,
-            percentage: 5,
-        }),
-        (marketing_address, VestingInit {
-            address_key: MARKETING_ADDRESS,
-            percentage: 5,
-        }),
-        (airdrop_address, VestingInit {
-            address_key: AIRDROP_ADDRESS,
-            percentage: 3,
-        }),
-    ];
-
-    // Initialize each vesting
-    for (address, init) in vestings.iter() {
-        let amount = total_supply
-            .checked_mul(U256::from(init.percentage))
-            .unwrap_or_revert_with(Cep18Error::Overflow)
-            .checked_div(U256::from(100))
-            .unwrap_or_revert_with(Cep18Error::Overflow);
-
-        runtime::put_key(init.address_key, storage::new_uref(*address).into());
-        runtime::put_key(
-            &get_vesting_amount_key(init.address_key),
-            storage::new_uref(amount).into()
-        );
-        runtime::put_key(
-            &get_start_time_key(init.address_key),
-            storage::new_uref(start_time).into()
-        );
-    }
 }
 
 // Helper function for linear vesting calculation
@@ -461,40 +464,31 @@ fn check_airdrop_transfer(amount: U256) -> bool {
     amount <= status.vested_amount
 }
 
-// Update check_vesting_transfer to use these helper functions
+// This could replace the current check_vesting_transfer function:
 pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
-    // Check Treasury first (special case - no linear vesting)
-    if is_treasury_address(&sender) {
+    let vesting_info = match get_vesting_info(&sender) {
+        Some(info) => info,
+        None => return true, // Not a vesting address
+    };
+
+    // Special case for treasury
+    if vesting_info.address_type == TREASURY_ADDRESS {
         let status = get_treasury_status();
         return status.is_fully_vested;
     }
 
-    // Check all linear vesting schedules
-    if is_team_address(&sender) {
-        return check_team_transfer(amount);
-    }
+    // Get the appropriate status based on address type
+    let status = match vesting_info.address_type {
+        TEAM_ADDRESS => get_team_status(),
+        STAKING_ADDRESS => get_staking_status(),
+        INVESTOR_ADDRESS => get_investor_status(),
+        NETWORK_ADDRESS => get_network_status(),
+        MARKETING_ADDRESS => get_marketing_status(),
+        AIRDROP_ADDRESS => get_airdrop_status(),
+        _ => return true, // Shouldn't happen, but being safe
+    };
 
-    // Check other vesting types using their specific addresses and checks
-    let vesting_configs: [(&str, VestingCheckFn); 5] = [
-        (STAKING_ADDRESS, check_staking_transfer as VestingCheckFn),
-        (INVESTOR_ADDRESS, check_investor_transfer as VestingCheckFn),
-        (NETWORK_ADDRESS, check_network_transfer as VestingCheckFn),
-        (MARKETING_ADDRESS, check_marketing_transfer as VestingCheckFn),
-        (AIRDROP_ADDRESS, check_airdrop_transfer as VestingCheckFn),
-    ];
-
-    for (address_key, check_fn) in vesting_configs.iter() {
-        let vesting_address: Key = storage::read(get_uref(address_key))
-            .unwrap_or_revert()
-            .unwrap_or_revert();
-        
-        if sender == vesting_address {
-            return check_fn(amount);
-        }
-    }
-
-    // If not a vesting address, allow transfer
-    true
+    amount <= status.vested_amount
 }
 
 // Public getters for addresses

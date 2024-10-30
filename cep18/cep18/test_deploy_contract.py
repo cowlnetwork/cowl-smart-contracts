@@ -28,21 +28,10 @@ class TokenDeployment:
             "wasm_path": wasm_path,
             
             # Token configuration
-            "token_name": "CasperToken",
-            "token_symbol": "CSTT",
+            "token_name": "DDCasperToken",
+            "token_symbol": "DSTT",
             "decimals": 9,
             "total_supply": "5500000000000000000",  # 5.5B tokens with 9 decimals
-            
-            # Vesting percentages
-            "allocations": {
-                "treasury": 50,
-                "team": 7,
-                "staking": 20,
-                "investor": 10,
-                "network": 5,
-                "marketing": 5,
-                "airdrop": 3
-            }
         }
 
 
@@ -167,10 +156,11 @@ class TokenDeployment:
             
             print("\nDeploying contract...")
             result = subprocess.run(
-                args, 
-                capture_output=True, 
-                text=True, 
-                check=True
+                args,
+                capture_output=True,
+                text=True,
+                check=True,
+                shell=True
             )
             
             # Print deployment response

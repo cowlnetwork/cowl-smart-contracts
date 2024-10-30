@@ -13,7 +13,6 @@ mod modalities;
 mod utils;
 mod vesting;
 use vesting::{
-    init_vesting, 
     check_vesting_transfer,
     get_treasury_vesting_details,
     get_team_vesting_details,
@@ -23,7 +22,6 @@ use vesting::{
     get_marketing_vesting_details,
     get_airdrop_vesting_details,
     calculate_vesting_allocations,
-    VestingAllocation,
 };
 
 use alloc::{
@@ -47,7 +45,7 @@ use casper_contract::{
 };
 use casper_types::{
     bytesrepr::ToBytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
-    ContractPackageHash, Key, RuntimeArgs, U256, PublicKey
+    ContractPackageHash, Key, RuntimeArgs, U256
 };
 
 use constants::{
@@ -66,12 +64,6 @@ use utils::{
     get_immediate_caller_address, get_total_supply_uref, read_from, read_total_supply_from,
     sec_check, write_total_supply_to, SecurityBadge,
 };
-
-// Define allocation structure
-struct TokenAllocation {
-    address: Key,
-    percentage: u8,
-}
 
 #[no_mangle]
 pub extern "C" fn name() {
@@ -333,18 +325,6 @@ pub extern "C" fn init() {
             amount: allocation.amount,
         }));
     }
-
-    // // Initialize vesting
-    // init_vesting(
-    //     initial_supply,
-    //     treasury_address,
-    //     team_address,
-    //     staking_address,
-    //     investor_address,
-    //     network_address,
-    //     marketing_address,
-    //     airdrop_address,
-    // );
 
     let security_badges_dict = storage::new_dictionary(SECURITY_BADGES).unwrap_or_revert();
     dictionary_put(
