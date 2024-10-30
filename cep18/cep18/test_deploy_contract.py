@@ -137,19 +137,19 @@ class TokenDeployment:
             "--session-path", self.config["wasm_path"],
             
             # Token basics
-            "--session-arg", f"name:string='{self.config['token_name']}'",
-            "--session-arg", f"symbol:string='{self.config['token_symbol']}'",
-            "--session-arg", f"decimals:u8='{self.config['decimals']}'",
-            "--session-arg", f"total_supply:u256='{self.config['total_supply']}'",
+            "--session-arg", f"\"name:string='{self.config['token_name']}'\"",
+            "--session-arg", f"\"symbol:string='{self.config['token_symbol']}'\"",
+            "--session-arg", f"\"decimals:u8='{self.config['decimals']}'\"",
+            "--session-arg", f"\"total_supply:u256='{self.config['total_supply']}'\"",
             
             # Vesting addresses
-            "--session-arg", f"\"treasury_address:public_key='{self.addresses['treasury']['public_key']}'\"",
-            "--session-arg", f"\"team_address:public_key='{self.addresses['team']['public_key']}'\"",
-            "--session-arg", f"\"staking_address:public_key='{self.addresses['staking']['public_key']}'\"",
-            "--session-arg", f"\"investor_address:public_key='{self.addresses['investor']['public_key']}'\"",
-            "--session-arg", f"\"network_address:public_key='{self.addresses['network']['public_key']}'\"",
-            "--session-arg", f"\"marketing_address:public_key='{self.addresses['marketing']['public_key']}'\"",
-            "--session-arg", f"\"airdrop_address:public_key='{self.addresses['airdrop']['public_key']}'\"",
+            "--session-arg", f"\"treasury_address:key='{self.get_account_key(self.addresses['treasury']['public_key'])}'\"",
+            "--session-arg", f"\"team_address:key='{self.get_account_key(self.addresses['team']['public_key'])}'\"",
+            "--session-arg", f"\"staking_address:key='{self.get_account_key(self.addresses['staking']['public_key'])}'\"",
+            "--session-arg", f"\"investor_address:key='{self.get_account_key(self.addresses['investor']['public_key'])}'\"",
+            "--session-arg", f"\"network_address:key='{self.get_account_key(self.addresses['network']['public_key'])}'\"",
+            "--session-arg", f"\"marketing_address:key='{self.get_account_key(self.addresses['marketing']['public_key'])}'\"",
+            "--session-arg", f"\"airdrop_address:key='{self.get_account_key(self.addresses['airdrop']['public_key'])}'\"",
             
             # Signing keys
             "--secret-key", f"./keys/deployer/secret_key.pem"
@@ -243,7 +243,7 @@ class TokenDeployment:
                 "--public-key", public_key
             ], capture_output=True, text=True, check=True)
             account_hash = result.stdout.strip()
-            return f"Key::Account({account_hash})"
+            return f"{account_hash}"
         except subprocess.CalledProcessError as e:
             print(f"Error getting account hash: {e.stderr}")
             sys.exit(1)

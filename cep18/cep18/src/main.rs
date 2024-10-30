@@ -22,6 +22,8 @@ use vesting::{
     get_network_vesting_details,
     get_marketing_vesting_details,
     get_airdrop_vesting_details,
+    calculate_vesting_allocations,
+    VestingAllocation,
 };
 
 use alloc::{
@@ -64,6 +66,12 @@ use utils::{
     get_immediate_caller_address, get_total_supply_uref, read_from, read_total_supply_from,
     sec_check, write_total_supply_to, SecurityBadge,
 };
+
+// Define allocation structure
+struct TokenAllocation {
+    address: Key,
+    percentage: u8,
+}
 
 #[no_mangle]
 pub extern "C" fn name() {
@@ -302,54 +310,9 @@ pub extern "C" fn init() {
     let marketing_address: Key = runtime::get_named_arg(MARKETING_ADDRESS);
     let airdrop_address: Key = runtime::get_named_arg(AIRDROP_ADDRESS);
 
-    // Get amounts from vesting module
-    let treasury_amount = initial_supply
-        .checked_div(U256::from(2))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let team_amount = initial_supply
-        .checked_mul(U256::from(7))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let staking_amount = initial_supply
-        .checked_mul(U256::from(20))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let investor_amount = initial_supply
-        .checked_mul(U256::from(10))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let network_amount = initial_supply
-        .checked_mul(U256::from(5))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let marketing_amount = initial_supply
-        .checked_mul(U256::from(5))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-    let airdrop_amount = initial_supply
-        .checked_mul(U256::from(3))
-        .unwrap_or_revert_with(Cep18Error::Overflow)
-        .checked_div(U256::from(100))
-        .unwrap_or_revert_with(Cep18Error::Overflow);
-
     let caller = get_caller();
     
-    // Write initial balances
-    write_balance_to(balances_uref, treasury_address, treasury_amount);
-    write_balance_to(balances_uref, team_address, team_amount);
-    write_balance_to(balances_uref, staking_address, staking_amount);
-    write_balance_to(balances_uref, investor_address, investor_amount);
-    write_balance_to(balances_uref, network_address, network_amount);
-    write_balance_to(balances_uref, marketing_address, marketing_amount);
-    write_balance_to(balances_uref, airdrop_address, airdrop_amount);
-
-    // Initialize vesting
-    init_vesting(
+    let allocations = calculate_vesting_allocations(
         initial_supply,
         treasury_address,
         team_address,
@@ -359,6 +322,29 @@ pub extern "C" fn init() {
         marketing_address,
         airdrop_address,
     );
+
+    // Write initial balances and record events
+    for allocation in allocations {
+        write_balance_to(balances_uref, allocation.address, allocation.amount);
+        
+        events::record_event_dictionary(Event::Transfer(Transfer {
+            sender: Key::from(caller),
+            recipient: allocation.address,
+            amount: allocation.amount,
+        }));
+    }
+
+    // // Initialize vesting
+    // init_vesting(
+    //     initial_supply,
+    //     treasury_address,
+    //     team_address,
+    //     staking_address,
+    //     investor_address,
+    //     network_address,
+    //     marketing_address,
+    //     airdrop_address,
+    // );
 
     let security_badges_dict = storage::new_dictionary(SECURITY_BADGES).unwrap_or_revert();
     dictionary_put(
@@ -392,47 +378,7 @@ pub extern "C" fn init() {
             );
         }
     }
-    // events::record_event_dictionary(Event::Mint(Mint {
-    //     recipient: caller.into(),
-    //     amount: initial_supply,
-    // }));
 
-    // Record initial transfers
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: treasury_address,
-        amount: treasury_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: team_address,
-        amount: team_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: staking_address,
-        amount: staking_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: investor_address,
-        amount: investor_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: network_address,
-        amount: network_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: marketing_address,
-        amount: marketing_amount,
-    }));
-    events::record_event_dictionary(Event::Transfer(Transfer {
-        sender: Key::from(caller),
-        recipient: airdrop_address,
-        amount: airdrop_amount,
-    }));
 }
 
 /// Admin EntryPoint to manipulate the security access granted to users.
@@ -499,6 +445,22 @@ pub extern "C" fn vesting_details() {
     runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
 
+// Helper function to calculate percentage of total supply
+fn calculate_token_amount(initial_supply: U256, percentage: u8) -> U256 {
+    if percentage == 50 {
+        // Special case for 50% to avoid multiplication
+        initial_supply
+            .checked_div(U256::from(2))
+            .unwrap_or_revert_with(Cep18Error::Overflow)
+    } else {
+        initial_supply
+            .checked_mul(U256::from(percentage))
+            .unwrap_or_revert_with(Cep18Error::Overflow)
+            .checked_div(U256::from(100))
+            .unwrap_or_revert_with(Cep18Error::Overflow)
+    }
+}
+
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
@@ -538,13 +500,13 @@ pub fn install_contract(name: &str) {
             .unwrap_or(0u8);
 
     // Get the vesting addresses that will be passed to init
-    let treasury_address: PublicKey = runtime::get_named_arg(TREASURY_ADDRESS);
-    let team_address: PublicKey = runtime::get_named_arg(TEAM_ADDRESS);
-    let staking_address: PublicKey = runtime::get_named_arg(STAKING_ADDRESS);
-    let investor_address: PublicKey = runtime::get_named_arg(INVESTOR_ADDRESS);
-    let network_address: PublicKey = runtime::get_named_arg(NETWORK_ADDRESS);
-    let marketing_address: PublicKey = runtime::get_named_arg(MARKETING_ADDRESS);
-    let airdrop_address: PublicKey = runtime::get_named_arg(AIRDROP_ADDRESS);
+    let treasury_address: Key = runtime::get_named_arg(TREASURY_ADDRESS);
+    let team_address: Key = runtime::get_named_arg(TEAM_ADDRESS);
+    let staking_address: Key = runtime::get_named_arg(STAKING_ADDRESS);
+    let investor_address: Key = runtime::get_named_arg(INVESTOR_ADDRESS);
+    let network_address: Key = runtime::get_named_arg(NETWORK_ADDRESS);
+    let marketing_address: Key = runtime::get_named_arg(MARKETING_ADDRESS);
+    let airdrop_address: Key = runtime::get_named_arg(AIRDROP_ADDRESS);
 
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
@@ -562,18 +524,10 @@ pub fn install_contract(name: &str) {
     named_keys.insert(NAME.to_string(), storage::new_uref(name).into());
     named_keys.insert(SYMBOL.to_string(), storage::new_uref(symbol).into());
     named_keys.insert(DECIMALS.to_string(), storage::new_uref(decimals).into());
-    named_keys.insert(
-        TOTAL_SUPPLY.to_string(),
-        storage::new_uref(total_supply).into(),
-    );
-    named_keys.insert(
-        EVENTS_MODE.to_string(),
-        storage::new_uref(events_mode).into(),
-    );
-    named_keys.insert(
-        ENABLE_MINT_BURN.to_string(),
-        storage::new_uref(enable_mint_burn).into(),
-    );
+    named_keys.insert(TOTAL_SUPPLY.to_string(), storage::new_uref(total_supply).into(),);
+    named_keys.insert(EVENTS_MODE.to_string(),storage::new_uref(events_mode).into(),);
+    named_keys.insert(ENABLE_MINT_BURN.to_string(),storage::new_uref(enable_mint_burn).into(),);
+    
     let entry_points = generate_entry_points();
 
     let hash_key_name = format!("{HASH_KEY_NAME_PREFIX}{name}");
