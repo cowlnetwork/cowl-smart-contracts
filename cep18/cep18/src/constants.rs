@@ -76,11 +76,4 @@ pub const MARKETING_ADDRESS: &str = "marketing_address";
 pub const AIRDROP_ADDRESS: &str = "airdrop_address";
 
 // Add new constant names for vesting entry points
-pub const TREASURY_STATUS_ENTRY_POINT_NAME: &str = "treasury_status";
-pub const TEAM_STATUS_ENTRY_POINT_NAME: &str = "team_status";
-pub const STAKING_STATUS_ENTRY_POINT_NAME: &str = "staking_status";
-pub const INVESTOR_STATUS_ENTRY_POINT_NAME: &str = "investor_status";
-pub const NETWORK_STATUS_ENTRY_POINT_NAME: &str = "network_status";
-pub const MARKETING_STATUS_ENTRY_POINT_NAME: &str = "marketing_status";
-pub const AIRDROP_STATUS_ENTRY_POINT_NAME: &str = "airdrop_status";
 pub const VESTING_DETAILS_ENTRY_POINT: &str = "vesting_details";

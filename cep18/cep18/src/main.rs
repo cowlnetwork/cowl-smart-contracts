@@ -45,7 +45,7 @@ use casper_contract::{
 };
 use casper_types::{
     bytesrepr::ToBytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
-    ContractPackageHash, Key, RuntimeArgs, U256,
+    ContractPackageHash, Key, RuntimeArgs, U256, PublicKey
 };
 
 use constants::{
@@ -537,6 +537,15 @@ pub fn install_contract(name: &str) {
         utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
             .unwrap_or(0u8);
 
+    // Get the vesting addresses that will be passed to init
+    let treasury_address: PublicKey = runtime::get_named_arg(TREASURY_ADDRESS);
+    let team_address: PublicKey = runtime::get_named_arg(TEAM_ADDRESS);
+    let staking_address: PublicKey = runtime::get_named_arg(STAKING_ADDRESS);
+    let investor_address: PublicKey = runtime::get_named_arg(INVESTOR_ADDRESS);
+    let network_address: PublicKey = runtime::get_named_arg(NETWORK_ADDRESS);
+    let marketing_address: PublicKey = runtime::get_named_arg(MARKETING_ADDRESS);
+    let airdrop_address: PublicKey = runtime::get_named_arg(AIRDROP_ADDRESS);
+
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
     let minter_list: Option<Vec<Key>> =
@@ -549,6 +558,7 @@ pub fn install_contract(name: &str) {
     .unwrap_or(0);
 
     let mut named_keys = NamedKeys::new();
+
     named_keys.insert(NAME.to_string(), storage::new_uref(name).into());
     named_keys.insert(SYMBOL.to_string(), storage::new_uref(symbol).into());
     named_keys.insert(DECIMALS.to_string(), storage::new_uref(decimals).into());
@@ -586,7 +596,18 @@ pub fn install_contract(name: &str) {
         storage::new_uref(contract_version).into(),
     );
     // Call contract to initialize it
-    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash};
+    // Update init_args to include vesting addresses
+    let mut init_args = runtime_args! {
+        TOTAL_SUPPLY => total_supply,
+        PACKAGE_HASH => package_hash,
+        TREASURY_ADDRESS => treasury_address,
+        TEAM_ADDRESS => team_address,
+        STAKING_ADDRESS => staking_address,
+        INVESTOR_ADDRESS => investor_address,
+        NETWORK_ADDRESS => network_address,
+        MARKETING_ADDRESS => marketing_address,
+        AIRDROP_ADDRESS => airdrop_address
+    };
 
     if let Some(admin_list) = admin_list {
         init_args.insert(ADMIN_LIST, admin_list).unwrap_or_revert();

@@ -13,9 +13,7 @@ use crate::constants::{
     INCREASE_ALLOWANCE_ENTRY_POINT_NAME, INIT_ENTRY_POINT_NAME, MINT_ENTRY_POINT_NAME,
     NAME_ENTRY_POINT_NAME, OWNER, RECIPIENT, SPENDER, SYMBOL_ENTRY_POINT_NAME,
     TOTAL_SUPPLY_ENTRY_POINT_NAME, TRANSFER_ENTRY_POINT_NAME, TRANSFER_FROM_ENTRY_POINT_NAME,
-    TREASURY_STATUS_ENTRY_POINT_NAME, TEAM_STATUS_ENTRY_POINT_NAME, STAKING_STATUS_ENTRY_POINT_NAME,
-    INVESTOR_STATUS_ENTRY_POINT_NAME, NETWORK_STATUS_ENTRY_POINT_NAME, MARKETING_STATUS_ENTRY_POINT_NAME,
-    AIRDROP_STATUS_ENTRY_POINT_NAME, VESTING_DETAILS_ENTRY_POINT
+    VESTING_DETAILS_ENTRY_POINT
 };
 
 /// Returns the `name` entry point.
@@ -227,77 +225,6 @@ pub fn vesting_details() -> EntryPoint {
             Box::new(CLType::U256),  // vested_amount
             Box::new(CLType::Bool),  // is_fully_vested
         ]),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-// Add entry points for each vesting status query
-pub fn treasury_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(TREASURY_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any, // VestingStatus will be serialized into CLValue
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn team_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(TEAM_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn staking_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(STAKING_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn investor_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(INVESTOR_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn network_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(NETWORK_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn marketing_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(MARKETING_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn airdrop_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(AIRDROP_STATUS_ENTRY_POINT_NAME),
-        Vec::new(),
-        CLType::Any,
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )

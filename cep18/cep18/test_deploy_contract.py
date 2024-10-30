@@ -1,4 +1,5 @@
-##
+#!/usr/bin/python3
+#
 ### Basic usage
 ## python deploy_script.py --node-address http://localhost:11101 --wasm-path ./contract.wasm
 
@@ -19,16 +20,16 @@ import sys
 import os
 
 class TokenDeployment:
-    def __init__(self, node_address: str, wasm_path: str):
+    def __init__(self, node_address: str, chain_name: str, wasm_path: str):
         self.config = {
             "node_address": node_address,
-            "chain_name": "casper-test",
+            "chain_name": chain_name,  # Now passed as parameter
             "payment_amount": "100000000000",  # 100 CSPR
             "wasm_path": wasm_path,
             
             # Token configuration
             "token_name": "CasperToken",
-            "token_symbol": "CST",
+            "token_symbol": "CSTT",
             "decimals": 9,
             "total_supply": "5500000000000000000",  # 5.5B tokens with 9 decimals
             
@@ -43,13 +44,7 @@ class TokenDeployment:
                 "airdrop": 3
             }
         }
-        self.addresses = {}
-        self.deploy_hash = None
 
-        # Validate WASM file exists
-        if not os.path.exists(wasm_path):
-            print(f"Error: WASM file not found at {wasm_path}")
-            sys.exit(1)
 
     def create_keypair(self, name: str) -> Dict[str, str]:
         """Create a new keypair using casper-client"""
@@ -88,13 +83,9 @@ class TokenDeployment:
             "investor",
             "network",
             "marketing",
-            "airdrop",
-            "admin1",
-            "admin2",
-            "minter1",
-            "minter2"
+            "airdrop"
         ]
-        
+            
         print("\nGenerating keypairs for all required addresses...")
         for name in required_addresses:
             self.addresses[name] = self.create_keypair(name)
@@ -119,9 +110,10 @@ class TokenDeployment:
         try:
             with open(filename) as f:
                 data = json.load(f)
-                # Keep node_address and wasm_path from initialization
+                # Keep node_address, chain_name, and wasm_path from initialization
                 loaded_config = data["config"]
                 loaded_config["node_address"] = self.config["node_address"]
+                loaded_config["chain_name"] = self.config["chain_name"]  # Keep the passed chain name
                 loaded_config["wasm_path"] = self.config["wasm_path"]
                 self.config = loaded_config
                 self.addresses = data["addresses"]
@@ -151,26 +143,17 @@ class TokenDeployment:
             "--session-arg", f"total_supply:u256='{self.config['total_supply']}'",
             
             # Vesting addresses
-            "--session-arg", f"treasury_address:key='{self.addresses['treasury']['public_key']}'",
-            "--session-arg", f"team_address:key='{self.addresses['team']['public_key']}'",
-            "--session-arg", f"staking_address:key='{self.addresses['staking']['public_key']}'",
-            "--session-arg", f"investor_address:key='{self.addresses['investor']['public_key']}'",
-            "--session-arg", f"network_address:key='{self.addresses['network']['public_key']}'",
-            "--session-arg", f"marketing_address:key='{self.addresses['marketing']['public_key']}'",
-            "--session-arg", f"airdrop_address:key='{self.addresses['airdrop']['public_key']}'",
-            
-            # Admin and minter lists
-            "--session-arg", f"admin_list:list<key>='[\"{self.addresses['admin1']['public_key']}\", \"{self.addresses['admin2']['public_key']}\"]'",
-            "--session-arg", f"minter_list:list<key>='[\"{self.addresses['minter1']['public_key']}\", \"{self.addresses['minter2']['public_key']}\"]'",
-            
-            # Other settings
-            "--session-arg", "events_mode:u8='1'",
-            "--session-arg", "enable_mint_burn:u8='0'",
+            "--session-arg", f"\"treasury_address:public_key='{self.addresses['treasury']['public_key']}'\"",
+            "--session-arg", f"\"team_address:public_key='{self.addresses['team']['public_key']}'\"",
+            "--session-arg", f"\"staking_address:public_key='{self.addresses['staking']['public_key']}'\"",
+            "--session-arg", f"\"investor_address:public_key='{self.addresses['investor']['public_key']}'\"",
+            "--session-arg", f"\"network_address:public_key='{self.addresses['network']['public_key']}'\"",
+            "--session-arg", f"\"marketing_address:public_key='{self.addresses['marketing']['public_key']}'\"",
+            "--session-arg", f"\"airdrop_address:public_key='{self.addresses['airdrop']['public_key']}'\"",
             
             # Signing keys
             "--secret-key", f"./keys/deployer/secret_key.pem"
         ]
-        
         return args
 
     def deploy_contract(self):
@@ -178,6 +161,9 @@ class TokenDeployment:
         try:
             print("\nPreparing deployment arguments...")
             args = self.prepare_deploy_args()
+            
+            # Print deployment command
+            self.print_deploy_command(args)
             
             print("\nDeploying contract...")
             result = subprocess.run(
@@ -187,9 +173,13 @@ class TokenDeployment:
                 check=True
             )
             
+            # Print deployment response
+            self.print_deploy_response(result.stdout)
+            self.print_deploy_response(result.stderr)
+            
             # Extract deploy hash from output
             self.deploy_hash = result.stdout.strip()
-            print(f"Contract deployed successfully. Deploy hash: {self.deploy_hash}")
+            print(f"\nDeploy hash: {self.deploy_hash}")
             
             # Save updated configuration
             self.save_configuration()
@@ -225,6 +215,38 @@ class TokenDeployment:
         except subprocess.CalledProcessError as e:
             print(f"Error verifying deployment: {e.stderr}")
             return False
+        
+    def print_deploy_command(self, args: List[str]):
+        """Format and print the deployment command"""
+        print("\nDeployment Command:")
+        print("------------------")
+        command = " ".join(args)
+        print(command)
+
+    def print_deploy_response(self, response: str):
+        """Format and print the deployment response"""
+        print("\nDeployment Response:")
+        print("-------------------")
+        try:
+            # Try to parse as JSON for better formatting
+            response_data = json.loads(response)
+            print(json.dumps(response_data, indent=2))
+        except json.JSONDecodeError:
+            # If not JSON, print as is
+            print(response)
+
+    def get_account_key(self, public_key: str) -> str:
+        """Convert public key to proper Key::Account format"""
+        try:
+            result = subprocess.run([
+                "casper-client", "account-address",
+                "--public-key", public_key
+            ], capture_output=True, text=True, check=True)
+            account_hash = result.stdout.strip()
+            return f"Key::Account({account_hash})"
+        except subprocess.CalledProcessError as e:
+            print(f"Error getting account hash: {e.stderr}")
+            sys.exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Deploy CEP-18 Token Contract')
@@ -232,6 +254,11 @@ def parse_args():
         '--node-address',
         required=True,
         help='Casper node address (e.g., http://localhost:11101)'
+    )
+    parser.add_argument(
+        '--chain-name',
+        required=True,
+        help='Chain name (e.g., casper-test)'
     )
     parser.add_argument(
         '--wasm-path',
@@ -252,16 +279,18 @@ def main():
 CEP-18 Token Deployment
 ----------------------
 Node Address: {args.node_address}
+Chain Name: {args.chain_name}
 WASM Path: {args.wasm_path}
 Clean Deploy: {args.clean}
 """)
     
     # Initialize deployment
-    deployment = TokenDeployment(args.node_address, args.wasm_path)
+    deployment = TokenDeployment(args.node_address, args.chain_name, args.wasm_path)
     
     # Load existing configuration unless clean flag is set
     if not args.clean and deployment.load_configuration():
-        proceed = input("\nExisting configuration found. Proceed with deployment? (y/n): ")
+        proceed = 'y'
+        #proceed = input("\nExisting configuration found. Proceed with deployment? (y/n): ")
         if proceed.lower() != 'y':
             print("Deployment cancelled")
             return
@@ -272,7 +301,8 @@ Clean Deploy: {args.clean}
         deployment.save_configuration()
     
     # Final confirmation
-    proceed = input("\nReady to deploy. Proceed? (y/n): ")
+    # proceed = input("\nReady to deploy. Proceed? (y/n): ")
+    proceed ='y'
     if proceed.lower() != 'y':
         print("Deployment cancelled")
         return
