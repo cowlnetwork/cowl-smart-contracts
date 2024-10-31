@@ -74,6 +74,7 @@ pub const INVESTOR_ADDRESS: &str = "investor_address";
 pub const NETWORK_ADDRESS: &str = "network_address";
 pub const MARKETING_ADDRESS: &str = "marketing_address";
 pub const AIRDROP_ADDRESS: &str = "airdrop_address";
+pub const LIQUIDITY_ADDRESS: &str = "liquidity_address";
 
 // Add new constant names for vesting entry points
 pub const VESTING_DETAILS_ENTRY_POINT: &str = "vesting_details";

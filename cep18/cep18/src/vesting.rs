@@ -18,7 +18,7 @@ use crate::{
 
 use crate::constants::{
     TREASURY_ADDRESS, TEAM_ADDRESS, STAKING_ADDRESS, INVESTOR_ADDRESS,
-    NETWORK_ADDRESS, MARKETING_ADDRESS, AIRDROP_ADDRESS,
+    NETWORK_ADDRESS, MARKETING_ADDRESS, AIRDROP_ADDRESS, LIQUIDITY_ADDRESS
 };
 
 
@@ -35,6 +35,7 @@ const TEN_YEARS_MONTHS: u64 = 120; // For monthly calculations
 const VESTING_AMOUNT_SUFFIX: &str = "_vesting_amount";
 const START_TIME_SUFFIX: &str = "_start_time";
 
+// Allocation Address Lock Durations
 const TREASURY_LOCK_DURATION: u64 = TWO_YEARS;  // 2 years lock
 const TEAM_VESTING_DURATION: u64 = TWO_YEARS;   // 2 years linear vesting
 const STAKING_VESTING_DURATION: u64 = TEN_YEARS; // 10 years linear vesting
@@ -169,29 +170,17 @@ pub fn calculate_vesting_allocations(
     network_address: Key,
     marketing_address: Key,
     airdrop_address: Key,
+    liquidity_address: Key,
 ) -> Vec<VestingAllocation> {
     let vestings = [
-        (treasury_address, VestingInit {
-            percentage: 50,
-        }),
-        (team_address, VestingInit {
-            percentage: 7,
-        }),
-        (staking_address, VestingInit {
-            percentage: 20,
-        }),
-        (investor_address, VestingInit {
-            percentage: 10,
-        }),
-        (network_address, VestingInit {
-            percentage: 5,
-        }),
-        (marketing_address, VestingInit {
-            percentage: 5,
-        }),
-        (airdrop_address, VestingInit {
-            percentage: 3,
-        }),
+        (treasury_address, VestingInit { percentage: 30 }),
+        (team_address, VestingInit { percentage: 7 }),
+        (staking_address, VestingInit { percentage: 20 }),
+        (investor_address, VestingInit { percentage: 10 }),
+        (network_address, VestingInit { percentage: 5 }),
+        (marketing_address, VestingInit { percentage: 5 }),
+        (airdrop_address, VestingInit { percentage: 3 }),
+        (liquidity_address, VestingInit { percentage: 20 }),
     ];
 
     vestings

@@ -53,7 +53,7 @@ use constants::{
     CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS_MODE,
     HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
     RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY, TREASURY_ADDRESS, TEAM_ADDRESS, STAKING_ADDRESS,
-    INVESTOR_ADDRESS, MARKETING_ADDRESS, NETWORK_ADDRESS, AIRDROP_ADDRESS
+    INVESTOR_ADDRESS, MARKETING_ADDRESS, NETWORK_ADDRESS, AIRDROP_ADDRESS, LIQUIDITY_ADDRESS
 };
 pub use error::Cep18Error;
 use events::{
@@ -301,6 +301,7 @@ pub extern "C" fn init() {
     let network_address: Key = runtime::get_named_arg(NETWORK_ADDRESS);
     let marketing_address: Key = runtime::get_named_arg(MARKETING_ADDRESS);
     let airdrop_address: Key = runtime::get_named_arg(AIRDROP_ADDRESS);
+    let liquidity_address: Key = runtime::get_named_arg(LIQUIDITY_ADDRESS);
 
     let caller = get_caller();
     
@@ -313,6 +314,7 @@ pub extern "C" fn init() {
         network_address,
         marketing_address,
         airdrop_address,
+        liquidity_address
     );
 
     // Write initial balances and record events
@@ -487,6 +489,7 @@ pub fn install_contract(name: &str) {
     let network_address: Key = runtime::get_named_arg(NETWORK_ADDRESS);
     let marketing_address: Key = runtime::get_named_arg(MARKETING_ADDRESS);
     let airdrop_address: Key = runtime::get_named_arg(AIRDROP_ADDRESS);
+    let liquidity_address: Key = runtime::get_named_arg(LIQUIDITY_ADDRESS);
 
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
@@ -540,7 +543,8 @@ pub fn install_contract(name: &str) {
         INVESTOR_ADDRESS => investor_address,
         NETWORK_ADDRESS => network_address,
         MARKETING_ADDRESS => marketing_address,
-        AIRDROP_ADDRESS => airdrop_address
+        AIRDROP_ADDRESS => airdrop_address,
+        LIQUIDITY_ADDRESS => liquidity_address,
     };
 
     if let Some(admin_list) = admin_list {
