@@ -22,6 +22,8 @@ use vesting::{
     get_marketing_vesting_details,
     get_airdrop_vesting_details,
     calculate_vesting_allocations,
+    get_vesting_amount_key,
+    get_start_time_key,
 };
 
 use alloc::{
@@ -280,6 +282,17 @@ pub extern "C" fn burn() {
     events::record_event_dictionary(Event::Burn(Burn { owner, amount }))
 }
 
+
+#[no_mangle]
+pub extern "C" fn get_staking_status() {
+    // Get the base amount
+    let key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
+    let uref = utils::get_uref(&key);
+    let amount: U256 = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
+    
+    runtime::ret(CLValue::from_t(amount).unwrap_or_revert());
+}
+
 /// Initiates the contracts states. Only used by the installer call,
 /// later calls will cause it to revert.
 #[no_mangle]
@@ -321,6 +334,17 @@ pub extern "C" fn init() {
     for allocation in allocations {
         write_balance_to(balances_uref, allocation.address, allocation.amount);
         
+        // Create the vesting amount key
+        let vesting_key = get_vesting_amount_key(allocation.storage_key);
+        let vesting_uref = storage::new_uref(allocation.amount);
+        runtime::put_key(&vesting_key, vesting_uref.into());
+
+        // Also need to store start time
+        let start_time: u64 = runtime::get_blocktime().into();
+        let start_time_key = get_start_time_key(allocation.storage_key);
+        let start_time_uref = storage::new_uref(start_time);
+        runtime::put_key(&start_time_key, start_time_uref.into());
+
         events::record_event_dictionary(Event::Transfer(Transfer {
             sender: Key::from(caller),
             recipient: allocation.address,

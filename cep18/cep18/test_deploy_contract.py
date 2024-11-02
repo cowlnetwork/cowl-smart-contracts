@@ -152,7 +152,19 @@ class TokenDeployment:
             "--session-arg", f"\"marketing_address:key='{self.get_account_key(self.addresses['marketing']['public_key'])}'\"",
             "--session-arg", f"\"airdrop_address:key='{self.get_account_key(self.addresses['airdrop']['public_key'])}'\"",
             "--session-arg", f"\"liquidity_address:key='{self.get_account_key(self.addresses['liquidity']['public_key'])}'\"",
+
+            # Security restrictions
+            "--session-arg", "\"enable_mint_burn:u8='0'\"",
+            "--session-arg", "\"events_mode:u8='0'\"",
+
+            # # Set admin list (only deployer as admin)
+            # "--session-arg", f"\"admin_list:string=['{self.get_account_key(self.addresses['liquidity']['public_key'])}]'\"",
             
+            # # Additional security settings
+            # "--session-arg", "\"minter_list:list(key)=[]\"",  # No minters
+            # "--session-arg", "\"burner_list:list(key)=[]\"",  # No burners
+            # "--session-arg", "\"mint_and_burn_list:list(key)=[]\"",  # No mint & burn privileges
+
             # Signing keys
             "--secret-key", f"./keys/deployer/secret_key.pem"
         ]

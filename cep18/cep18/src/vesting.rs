@@ -35,24 +35,42 @@ const TEN_YEARS_MONTHS: u64 = 120; // For monthly calculations
 const VESTING_AMOUNT_SUFFIX: &str = "_vesting_amount";
 const START_TIME_SUFFIX: &str = "_start_time";
 
-// Allocation Address Lock Durations
-const TREASURY_LOCK_DURATION: u64 = TWO_YEARS;  // 2 years lock
-const TEAM_VESTING_DURATION: u64 = TWO_YEARS;   // 2 years linear vesting
-const STAKING_VESTING_DURATION: u64 = TEN_YEARS; // 10 years linear vesting
-const INVESTOR_VESTING_DURATION: u64 = TWO_YEARS;   // 2 years linear vesting
-const NETWORK_VESTING_DURATION: u64 = TWO_YEARS;    // 2 years linear vesting
-const MARKETING_VESTING_DURATION: u64 = TWO_YEARS;  // 2 years linear vesting
-const AIRDROP_VESTING_DURATION: u64 = TWO_YEARS;    // 2 years linear vesting
+// // Allocation Address Lock Durations
+// const TREASURY_LOCK_DURATION: u64 = TWO_YEARS;  // 2 years lock
+// const TEAM_VESTING_DURATION: u64 = TWO_YEARS;   // 2 years linear vesting
+// const STAKING_VESTING_DURATION: u64 = TEN_YEARS; // 10 years linear vesting
+// const INVESTOR_VESTING_DURATION: u64 = TWO_YEARS;   // 2 years linear vesting
+// const NETWORK_VESTING_DURATION: u64 = TWO_YEARS;    // 2 years linear vesting
+// const MARKETING_VESTING_DURATION: u64 = TWO_YEARS;  // 2 years linear vesting
+// const AIRDROP_VESTING_DURATION: u64 = TWO_YEARS;    // 2 years linear vesting
+
+// for testing
+const MINUTE_IN_SECONDS: u64 = 60;
+const TEN_MINUTES: u64 = 10 * MINUTE_IN_SECONDS;
+// Modified vesting durations for testing
+const TEST_TWO_YEARS: u64 = 24 * TEN_MINUTES;    // 24 ten-minute periods to simulate 2 years
+const TEST_TEN_YEARS: u64 = 120 * TEN_MINUTES;   // 120 ten-minute periods to simulate 10 years
+// Modified allocation durations for testing
+const TREASURY_LOCK_DURATION: u64 = TEST_TWO_YEARS;     // 2 years (24 periods) lock
+const TEAM_VESTING_DURATION: u64 = TEST_TWO_YEARS;      // 2 years (24 periods) linear vesting
+const STAKING_VESTING_DURATION: u64 = TEST_TEN_YEARS;   // 10 years (120 periods) linear vesting
+const INVESTOR_VESTING_DURATION: u64 = TEST_TWO_YEARS;  // 2 years linear vesting
+const NETWORK_VESTING_DURATION: u64 = TEST_TWO_YEARS;   // 2 years linear vesting
+const MARKETING_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years linear vesting
+const AIRDROP_VESTING_DURATION: u64 = TEST_TWO_YEARS;   // 2 years linear vesting
+
 
 // Struct to hold vesting result
 pub struct VestingAllocation {
     pub address: Key,
     pub amount: U256,
+    pub storage_key: &'static str,
 }
 
 // Structure to hold vesting initialization data
 struct VestingInit {
     percentage: u8,
+    storage_key: &'static str,
 }
 
 // Helper struct for vesting status
@@ -173,14 +191,14 @@ pub fn calculate_vesting_allocations(
     liquidity_address: Key,
 ) -> Vec<VestingAllocation> {
     let vestings = [
-        (treasury_address, VestingInit { percentage: 30 }),
-        (team_address, VestingInit { percentage: 7 }),
-        (staking_address, VestingInit { percentage: 20 }),
-        (investor_address, VestingInit { percentage: 10 }),
-        (network_address, VestingInit { percentage: 5 }),
-        (marketing_address, VestingInit { percentage: 5 }),
-        (airdrop_address, VestingInit { percentage: 3 }),
-        (liquidity_address, VestingInit { percentage: 20 }),
+        (treasury_address, VestingInit { percentage: 30, storage_key: TREASURY_ADDRESS }),
+        (team_address, VestingInit { percentage: 7, storage_key: TEAM_ADDRESS }),
+        (staking_address, VestingInit { percentage: 20, storage_key: STAKING_ADDRESS }),
+        (investor_address, VestingInit { percentage: 10, storage_key: INVESTOR_ADDRESS }),
+        (network_address, VestingInit { percentage: 5, storage_key: NETWORK_ADDRESS }),
+        (marketing_address, VestingInit { percentage: 5, storage_key: MARKETING_ADDRESS }),
+        (airdrop_address, VestingInit { percentage: 3, storage_key: AIRDROP_ADDRESS }),
+        (liquidity_address, VestingInit { percentage: 20, storage_key: LIQUIDITY_ADDRESS }),
     ];
 
     vestings
@@ -201,16 +219,17 @@ pub fn calculate_vesting_allocations(
             VestingAllocation {
                 address: *address,
                 amount,
+                storage_key: init.storage_key, 
             }
         })
         .collect()
 }
 
-fn get_vesting_amount_key(base_key: &str) -> String {
+pub fn get_vesting_amount_key(base_key: &str) -> String {
     format!("{}{}", base_key, VESTING_AMOUNT_SUFFIX)
 }
 
-fn get_start_time_key(base_key: &str) -> String {
+pub fn get_start_time_key(base_key: &str) -> String {
     format!("{}{}", base_key, START_TIME_SUFFIX)
 }
 
@@ -233,12 +252,15 @@ fn read_start_time(base_key: &str) -> u64 {
 fn calculate_time_until_next_release(start_time: u64) -> u64 {
     let current_time: u64 = runtime::get_blocktime().into();
     if current_time <= start_time {
-        return MONTH_IN_SECONDS;
+        // return MONTH_IN_SECONDS;
+        return TEN_MINUTES;
     }
     
     let time_elapsed = current_time - start_time;
-    let months_elapsed = time_elapsed / MONTH_IN_SECONDS;
-    let next_release = (months_elapsed + 1) * MONTH_IN_SECONDS + start_time;
+    // let months_elapsed = time_elapsed / MONTH_IN_SECONDS;
+    // let next_release = (months_elapsed + 1) * MONTH_IN_SECONDS + start_time;
+    let periods_elapsed = time_elapsed / TEN_MINUTES;
+    let next_release = (periods_elapsed + 1) * TEN_MINUTES + start_time;
     
     if next_release <= current_time {
         0

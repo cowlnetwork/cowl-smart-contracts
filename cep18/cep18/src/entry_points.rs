@@ -230,6 +230,16 @@ pub fn vesting_details() -> EntryPoint {
     )
 }
 
+pub fn get_staking_status() -> EntryPoint {
+    EntryPoint::new(
+        String::from("get_staking_status"),
+        Vec::new(),
+        U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
 /// Returns the default set of CEP-18 token entry points.
 pub fn generate_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
@@ -251,6 +261,7 @@ pub fn generate_entry_points() -> EntryPoints {
 
     // Add vesting status entry points
     entry_points.add_entry_point(vesting_details());
+    entry_points.add_entry_point(get_staking_status());
 
     entry_points
 }
