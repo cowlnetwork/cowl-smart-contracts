@@ -26,14 +26,14 @@ use crate::constants::{
 const MONTH_IN_SECONDS: u64 = 2_628_000; // 30.4375 days average
 const YEAR_IN_SECONDS: u64 = 31_536_000;  // 365 days
 
-const TWO_YEARS: u64 = 2 * YEAR_IN_SECONDS;
-const TEN_YEARS: u64 = 10 * YEAR_IN_SECONDS;
-const TWO_YEARS_MONTHS: u64 = 24;  // For monthly calculations
-const TEN_YEARS_MONTHS: u64 = 120; // For monthly calculations
+pub const TWO_YEARS: u64 = 2 * YEAR_IN_SECONDS;
+pub const TEN_YEARS: u64 = 10 * YEAR_IN_SECONDS;
+pub const TWO_YEARS_MONTHS: u64 = 24;  // For monthly calculations
+pub const TEN_YEARS_MONTHS: u64 = 120; // For monthly calculations
 
 // Use suffixes to differentiate storage keys from runtime args
-const VESTING_AMOUNT_SUFFIX: &str = "_vesting_amount";
-const START_TIME_SUFFIX: &str = "_start_time";
+pub const VESTING_AMOUNT_SUFFIX: &str = "_vesting_amount";
+pub const START_TIME_SUFFIX: &str = "_start_time";
 
 // // Allocation Address Lock Durations
 // const TREASURY_LOCK_DURATION: u64 = TWO_YEARS;  // 2 years lock
@@ -45,8 +45,8 @@ const START_TIME_SUFFIX: &str = "_start_time";
 // const AIRDROP_VESTING_DURATION: u64 = TWO_YEARS;    // 2 years linear vesting
 
 // for testing
-const MINUTE_IN_SECONDS: u64 = 60;
-const TEN_MINUTES: u64 = 10 * MINUTE_IN_SECONDS;
+pub const MINUTE_IN_SECONDS: u64 = 60;
+pub const TEN_MINUTES: u64 = 10 * MINUTE_IN_SECONDS;
 // Modified vesting durations for testing
 const TEST_TWO_YEARS: u64 = 24 * TEN_MINUTES;    // 24 ten-minute periods to simulate 2 years
 const TEST_TEN_YEARS: u64 = 120 * TEN_MINUTES;   // 120 ten-minute periods to simulate 10 years
@@ -241,7 +241,7 @@ fn read_vesting_amount(base_key: &str) -> U256 {
         .unwrap_or_revert()
 }
 
-fn read_start_time(base_key: &str) -> u64 {
+pub fn read_start_time(base_key: &str) -> u64 {
     let key = get_start_time_key(base_key);
     storage::read(get_uref(&key))
         .unwrap_or_revert()

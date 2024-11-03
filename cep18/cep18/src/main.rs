@@ -282,16 +282,88 @@ pub extern "C" fn burn() {
     events::record_event_dictionary(Event::Burn(Burn { owner, amount }))
 }
 
+// #[no_mangle]
+// pub extern "C" fn debug_staking_status() {
+//     // Direct storage access
+//     let vesting_key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
+//     let start_key = vesting::get_start_time_key(constants::STAKING_ADDRESS);
+    
+//     let total_amount: U256 = storage::read(utils::get_uref(&vesting_key))
+//         .unwrap_or_revert()
+//         .unwrap_or_revert();
+        
+//     let start_time: u64 = storage::read(utils::get_uref(&start_key))
+//         .unwrap_or_revert()
+//         .unwrap_or_revert();
+    
+//     // Just return the total_amount for now
+//     runtime::ret(CLValue::from_t(total_amount).unwrap_or_revert());
+// }
+
+#[no_mangle]
+pub extern "C" fn debug_staking_status() {
+    let vesting_key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
+    let start_key = vesting::get_start_time_key(constants::STAKING_ADDRESS);
+    
+    // This reads as U256
+    let total_amount: U256 = storage::read(utils::get_uref(&vesting_key))
+        .unwrap_or_revert()
+        .unwrap_or_revert();
+        
+    // In deploy results, you'll see something like:
+    // "bytes": "0400ca9a3b", "parsed": "1000000000" as U512
+    
+    let start_time: u64 = storage::read(utils::get_uref(&start_key))
+        .unwrap_or_revert()
+        .unwrap_or_revert();
+    
+    let current_time: u64 = runtime::get_blocktime().into();
+    let time_elapsed = current_time - start_time;
+    let periods_elapsed = time_elapsed / vesting::TEN_MINUTES;
+    
+    let vested_amount = if periods_elapsed >= 120 {
+        total_amount
+    } else {
+        total_amount
+            .checked_mul(U256::from(periods_elapsed))
+            .unwrap_or_revert()
+            .checked_div(U256::from(120))
+            .unwrap_or_revert()
+    };
+
+    // When returning, these U256 values will be shown as U512 in deploy results
+    let result = (
+        total_amount,     // Will see as U512 in results
+        vested_amount,    // Will see as U512 in results
+        periods_elapsed   // Will see as integer in results
+    );
+    
+    runtime::ret(CLValue::from_t(result).unwrap_or_revert());
+}
 
 #[no_mangle]
 pub extern "C" fn get_staking_status() {
-    // Get the base amount
-    let key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
-    let uref = utils::get_uref(&key);
-    let amount: U256 = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
+    let status = vesting::get_staking_status();
     
-    runtime::ret(CLValue::from_t(amount).unwrap_or_revert());
+    // Just for testing/debugging, let's return all values
+    let result = (
+        status.total_amount,
+        status.vested_amount,
+        status.monthly_release
+    );
+    
+    runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
+
+// #[no_mangle]
+// pub extern "C" fn get_staking_status() {
+//     // Get the base amount
+//     let key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
+//     let uref = utils::get_uref(&key);
+//     let amount: U256 = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
+    
+//     runtime::ret(CLValue::from_t(amount).unwrap_or_revert());
+// }
 
 /// Initiates the contracts states. Only used by the installer call,
 /// later calls will cause it to revert.
