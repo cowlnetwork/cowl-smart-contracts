@@ -1,0 +1,23 @@
+[package]
+name = "cowl-ghost-swap"
+version = "1.0.0"
+authors = ["Your Name <your.email@example.com>"]
+edition = "2021"
+
+[dependencies]
+casper-contract = { version = "3.0.0", default-features = false }
+casper-types = { version = "3.0.0", default-features = false }
+
+[lib]
+name = "cowl_ghost_swap"
+crate-type = ["cdylib"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = 'abort'
+opt-level = "z"
+strip = true
+
+[features]
+default = []
