@@ -523,21 +523,6 @@ pub extern "C" fn vesting_details() {
     runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
 
-// Helper function to calculate percentage of total supply
-fn calculate_token_amount(initial_supply: U256, percentage: u8) -> U256 {
-    if percentage == 50 {
-        // Special case for 50% to avoid multiplication
-        initial_supply
-            .checked_div(U256::from(2))
-            .unwrap_or_revert_with(Cep18Error::Overflow)
-    } else {
-        initial_supply
-            .checked_mul(U256::from(percentage))
-            .unwrap_or_revert_with(Cep18Error::Overflow)
-            .checked_div(U256::from(100))
-            .unwrap_or_revert_with(Cep18Error::Overflow)
-    }
-}
 
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();

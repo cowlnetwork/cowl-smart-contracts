@@ -1,6 +1,5 @@
 use alloc::{
     string::String,
-    vec, 
     vec::Vec,
     format,
 };
@@ -165,12 +164,7 @@ pub fn get_all_vesting_addresses() -> Vec<VestingAddressInfo> {
     ].to_vec()
 }
 
-// Helper function to find if an address is a vesting address
-pub fn is_vesting_address(address: &Key) -> bool {
-    get_all_vesting_addresses()
-        .iter()
-        .any(|info| &info.address == address)
-}
+
 
 // Helper function to get vesting info for a specific address
 pub fn get_vesting_info(address: &Key) -> Option<VestingAddressInfo> {
@@ -300,19 +294,9 @@ fn calculate_linear_vesting(
         .unwrap_or_revert()
 }
 
-fn is_treasury_address(address: &Key) -> bool {
-    let treasury_address: Key = storage::read(get_uref(TREASURY_ADDRESS))
-        .unwrap_or_revert()
-        .unwrap_or_revert();
-    *address == treasury_address
-}
 
-fn is_team_address(address: &Key) -> bool {
-    let team_address: Key = storage::read(get_uref(TEAM_ADDRESS))
-        .unwrap_or_revert()
-        .unwrap_or_revert();
-    *address == team_address
-}
+
+
 
 // Implementation of status checks for each vesting type
 pub fn get_treasury_status() -> VestingStatus {
@@ -441,39 +425,17 @@ pub fn get_airdrop_status() -> VestingStatus {
     )
 }
 
-// Helper type for vesting check functions
-type VestingCheckFn = fn(U256) -> bool;
 
-fn check_team_transfer(amount: U256) -> bool {
-    let status = get_team_status();
-    amount <= status.vested_amount
-}
 
-// For consistency, let's add similar helper functions for other vesting types
-fn check_investor_transfer(amount: U256) -> bool {
-    let status = get_investor_status();
-    amount <= status.vested_amount
-}
 
-fn check_staking_transfer(amount: U256) -> bool {
-    let status = get_staking_status();
-    amount <= status.vested_amount
-}
 
-fn check_network_transfer(amount: U256) -> bool {
-    let status = get_network_status();
-    amount <= status.vested_amount
-}
 
-fn check_marketing_transfer(amount: U256) -> bool {
-    let status = get_marketing_status();
-    amount <= status.vested_amount
-}
 
-fn check_airdrop_transfer(amount: U256) -> bool {
-    let status = get_airdrop_status();
-    amount <= status.vested_amount
-}
+
+
+
+
+
 
 // This could replace the current check_vesting_transfer function:
 pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
@@ -502,18 +464,8 @@ pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
     amount <= status.vested_amount
 }
 
-// Public getters for addresses
-pub fn get_treasury_address() -> Key {
-    storage::read(get_uref(TREASURY_ADDRESS))
-        .unwrap_or_revert()
-        .unwrap_or_revert()
-}
 
-pub fn get_team_address() -> Key {
-    storage::read(get_uref(TEAM_ADDRESS))
-        .unwrap_or_revert()
-        .unwrap_or_revert()
-}
+
 
 pub fn get_treasury_vesting_details() -> (U256, U256, bool) {
     let status = get_treasury_status();
