@@ -1,21 +1,24 @@
 [package]
-name = "cowl-ghost-swap"
+name = "cowl-swap"
 version = "1.0.0"
-authors = ["Your Name <your.email@example.com>"]
 edition = "2021"
+authors = ["Thamps <thamps@cowl.network>"]
+
+[[bin]]
+name = "cowl-swap"
+path = "src/main.rs"
+bench = false
+doctest = false
+test = false
 
 [dependencies]
-casper-contract = { version = "3.0.0", default-features = false }
-casper-types = { version = "3.0.0", default-features = false }
-
-[lib]
-name = "cowl_ghost_swap"
-crate-type = ["cdylib"]
+casper-contract = "3.0.0"
+casper-types = "3.0.0"
 
 [profile.release]
 codegen-units = 1
 lto = true
-panic = 'abort'
+panic = "abort"
 opt-level = "z"
 strip = true
 
