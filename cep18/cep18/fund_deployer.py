@@ -28,7 +28,7 @@ class FundDeployer:
             deployer_public_key = self.config["addresses"]["deployer"]["public_key"]
             
             print(f"Transferring {amount} motes to: {deployer_public_key}")
-            
+                   
             transfer_args = [
                 "casper-client", "transfer",
                 "--node-address", self.node_address,
@@ -39,7 +39,8 @@ class FundDeployer:
                 "--payment-amount", "100000000",
                 "--secret-key", self.faucet_key
             ]
-            
+            print(" ".join(transfer_args))
+
             result = subprocess.run(transfer_args, capture_output=True, text=True, check=True)
             deploy_hash = result.stdout.strip()
             print(f"Transfer deploy hash: {deploy_hash}")

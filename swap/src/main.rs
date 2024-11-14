@@ -113,7 +113,7 @@ pub extern "C" fn call() {
     // Installation parameters
     let start_time: u64 = runtime::get_named_arg("start_time");
     let end_time: u64 = runtime::get_named_arg("end_time");
-    let cowl_token: ContractHash = runtime::get_named_arg("cowl_token");
+    let cowl_token: Key = runtime::get_named_arg("cowl_token");
 
     // Create contract purse
     let contract_purse = system::create_purse();
