@@ -1,0 +1,3 @@
+[submodule "casper/cep18"]
+	path = casper/cep18
+	url = https://github.com/casper-ecosystem/cep18.git

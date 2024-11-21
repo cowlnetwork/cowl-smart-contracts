@@ -1,8 +1,4 @@
-use alloc::{
-    string::String,
-    vec::Vec,
-    format,
-};
+use alloc::{format, string::String, vec::Vec};
 
 use casper_contract::{
     contract_api::{runtime, storage},
@@ -10,24 +6,20 @@ use casper_contract::{
 };
 use casper_types::{Key, U256};
 
-use crate::{
-    error::Cep18Error,
-    utils::get_uref,
-};
+use crate::{error::Cep18Error, utils::get_uref};
 
 use crate::constants::{
-    TREASURY_ADDRESS, TEAM_ADDRESS, STAKING_ADDRESS, INVESTOR_ADDRESS,
-    NETWORK_ADDRESS, MARKETING_ADDRESS, AIRDROP_ADDRESS, LIQUIDITY_ADDRESS
+    AIRDROP_ADDRESS, INVESTOR_ADDRESS, LIQUIDITY_ADDRESS, MARKETING_ADDRESS, NETWORK_ADDRESS,
+    STAKING_ADDRESS, TEAM_ADDRESS, TREASURY_ADDRESS,
 };
-
 
 // Vesting durations
 const MONTH_IN_SECONDS: u64 = 2_628_000; // 30.4375 days average
-const YEAR_IN_SECONDS: u64 = 31_536_000;  // 365 days
+const YEAR_IN_SECONDS: u64 = 31_536_000; // 365 days
 
 pub const TWO_YEARS: u64 = 2 * YEAR_IN_SECONDS;
 pub const TEN_YEARS: u64 = 10 * YEAR_IN_SECONDS;
-pub const TWO_YEARS_MONTHS: u64 = 24;  // For monthly calculations
+pub const TWO_YEARS_MONTHS: u64 = 24; // For monthly calculations
 pub const TEN_YEARS_MONTHS: u64 = 120; // For monthly calculations
 
 // Use suffixes to differentiate storage keys from runtime args
@@ -47,17 +39,16 @@ pub const START_TIME_SUFFIX: &str = "_start_time";
 pub const MINUTE_IN_SECONDS: u64 = 60;
 pub const TEN_MINUTES: u64 = 10 * MINUTE_IN_SECONDS;
 // Modified vesting durations for testing
-const TEST_TWO_YEARS: u64 = 24 * TEN_MINUTES;    // 24 ten-minute periods to simulate 2 years
-const TEST_TEN_YEARS: u64 = 120 * TEN_MINUTES;   // 120 ten-minute periods to simulate 10 years
-// Modified allocation durations for testing
-const TREASURY_LOCK_DURATION: u64 = TEST_TWO_YEARS;     // 2 years (24 periods) lock
-const TEAM_VESTING_DURATION: u64 = TEST_TWO_YEARS;      // 2 years (24 periods) linear vesting
-const STAKING_VESTING_DURATION: u64 = TEST_TEN_YEARS;   // 10 years (120 periods) linear vesting
-const INVESTOR_VESTING_DURATION: u64 = TEST_TWO_YEARS;  // 2 years linear vesting
-const NETWORK_VESTING_DURATION: u64 = TEST_TWO_YEARS;   // 2 years linear vesting
+const TEST_TWO_YEARS: u64 = 24 * TEN_MINUTES; // 24 ten-minute periods to simulate 2 years
+const TEST_TEN_YEARS: u64 = 120 * TEN_MINUTES; // 120 ten-minute periods to simulate 10 years
+                                               // Modified allocation durations for testing
+const TREASURY_LOCK_DURATION: u64 = TEST_TWO_YEARS; // 2 years (24 periods) lock
+const TEAM_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years (24 periods) linear vesting
+const STAKING_VESTING_DURATION: u64 = TEST_TEN_YEARS; // 10 years (120 periods) linear vesting
+const INVESTOR_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years linear vesting
+const NETWORK_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years linear vesting
 const MARKETING_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years linear vesting
-const AIRDROP_VESTING_DURATION: u64 = TEST_TWO_YEARS;   // 2 years linear vesting
-
+const AIRDROP_VESTING_DURATION: u64 = TEST_TWO_YEARS; // 2 years linear vesting
 
 // Struct to hold vesting result
 pub struct VestingAllocation {
@@ -161,10 +152,9 @@ pub fn get_all_vesting_addresses() -> Vec<VestingAddressInfo> {
             address_type: AIRDROP_ADDRESS,
             duration: AIRDROP_VESTING_DURATION,
         },
-    ].to_vec()
+    ]
+    .to_vec()
 }
-
-
 
 // Helper function to get vesting info for a specific address
 pub fn get_vesting_info(address: &Key) -> Option<VestingAddressInfo> {
@@ -185,14 +175,62 @@ pub fn calculate_vesting_allocations(
     liquidity_address: Key,
 ) -> Vec<VestingAllocation> {
     let vestings = [
-        (treasury_address, VestingInit { percentage: 30, storage_key: TREASURY_ADDRESS }),
-        (team_address, VestingInit { percentage: 7, storage_key: TEAM_ADDRESS }),
-        (staking_address, VestingInit { percentage: 20, storage_key: STAKING_ADDRESS }),
-        (investor_address, VestingInit { percentage: 10, storage_key: INVESTOR_ADDRESS }),
-        (network_address, VestingInit { percentage: 5, storage_key: NETWORK_ADDRESS }),
-        (marketing_address, VestingInit { percentage: 5, storage_key: MARKETING_ADDRESS }),
-        (airdrop_address, VestingInit { percentage: 3, storage_key: AIRDROP_ADDRESS }),
-        (liquidity_address, VestingInit { percentage: 20, storage_key: LIQUIDITY_ADDRESS }),
+        (
+            treasury_address,
+            VestingInit {
+                percentage: 30,
+                storage_key: TREASURY_ADDRESS,
+            },
+        ),
+        (
+            team_address,
+            VestingInit {
+                percentage: 7,
+                storage_key: TEAM_ADDRESS,
+            },
+        ),
+        (
+            staking_address,
+            VestingInit {
+                percentage: 20,
+                storage_key: STAKING_ADDRESS,
+            },
+        ),
+        (
+            investor_address,
+            VestingInit {
+                percentage: 10,
+                storage_key: INVESTOR_ADDRESS,
+            },
+        ),
+        (
+            network_address,
+            VestingInit {
+                percentage: 5,
+                storage_key: NETWORK_ADDRESS,
+            },
+        ),
+        (
+            marketing_address,
+            VestingInit {
+                percentage: 5,
+                storage_key: MARKETING_ADDRESS,
+            },
+        ),
+        (
+            airdrop_address,
+            VestingInit {
+                percentage: 3,
+                storage_key: AIRDROP_ADDRESS,
+            },
+        ),
+        (
+            liquidity_address,
+            VestingInit {
+                percentage: 20,
+                storage_key: LIQUIDITY_ADDRESS,
+            },
+        ),
     ];
 
     vestings
@@ -213,7 +251,7 @@ pub fn calculate_vesting_allocations(
             VestingAllocation {
                 address: *address,
                 amount,
-                storage_key: init.storage_key, 
+                storage_key: init.storage_key,
             }
         })
         .collect()
@@ -249,13 +287,13 @@ fn calculate_time_until_next_release(start_time: u64) -> u64 {
         // return MONTH_IN_SECONDS;
         return TEN_MINUTES;
     }
-    
+
     let time_elapsed = current_time - start_time;
     // let months_elapsed = time_elapsed / MONTH_IN_SECONDS;
     // let next_release = (months_elapsed + 1) * MONTH_IN_SECONDS + start_time;
     let periods_elapsed = time_elapsed / TEN_MINUTES;
     let next_release = (periods_elapsed + 1) * TEN_MINUTES + start_time;
-    
+
     if next_release <= current_time {
         0
     } else {
@@ -271,13 +309,9 @@ fn calculate_monthly_release(total_amount: U256, duration_months: u64) -> U256 {
 }
 
 // Helper function for linear vesting calculation
-fn calculate_linear_vesting(
-    start_time: u64,
-    vesting_duration: u64,
-    total_amount: U256,
-) -> U256 {
+fn calculate_linear_vesting(start_time: u64, vesting_duration: u64, total_amount: U256) -> U256 {
     let current_time: u64 = runtime::get_blocktime().into();
-    
+
     if current_time <= start_time {
         return U256::zero();
     }
@@ -294,25 +328,29 @@ fn calculate_linear_vesting(
         .unwrap_or_revert()
 }
 
-
-
-
-
 // Implementation of status checks for each vesting type
 pub fn get_treasury_status() -> VestingStatus {
     let start_time = read_start_time(TREASURY_ADDRESS);
     let total_amount = read_vesting_amount(TREASURY_ADDRESS);
-    
+
     let current_time: u64 = runtime::get_blocktime().into();
     let is_fully_vested = current_time - start_time >= TREASURY_LOCK_DURATION;
-    let vested_amount = if is_fully_vested { total_amount } else { U256::zero() };
-    
+    let vested_amount = if is_fully_vested {
+        total_amount
+    } else {
+        U256::zero()
+    };
+
     VestingStatus::new(
         total_amount,
         vested_amount,
         is_fully_vested,
         TREASURY_LOCK_DURATION,
-        if is_fully_vested { 0 } else { start_time + TREASURY_LOCK_DURATION - current_time },
+        if is_fully_vested {
+            0
+        } else {
+            start_time + TREASURY_LOCK_DURATION - current_time
+        },
         U256::zero(), // Treasury has no monthly release
     )
 }
@@ -320,11 +358,11 @@ pub fn get_treasury_status() -> VestingStatus {
 pub fn get_team_status() -> VestingStatus {
     let start_time = read_start_time(TEAM_ADDRESS);
     let total_amount = read_vesting_amount(TEAM_ADDRESS);
-    
+
     let vested_amount = calculate_linear_vesting(start_time, TEAM_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TWO_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -338,11 +376,12 @@ pub fn get_team_status() -> VestingStatus {
 pub fn get_staking_status() -> VestingStatus {
     let start_time = read_start_time(STAKING_ADDRESS);
     let total_amount = read_vesting_amount(STAKING_ADDRESS);
-    
-    let vested_amount = calculate_linear_vesting(start_time, STAKING_VESTING_DURATION, total_amount);
+
+    let vested_amount =
+        calculate_linear_vesting(start_time, STAKING_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TEN_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -356,11 +395,12 @@ pub fn get_staking_status() -> VestingStatus {
 pub fn get_investor_status() -> VestingStatus {
     let start_time = read_start_time(INVESTOR_ADDRESS);
     let total_amount = read_vesting_amount(INVESTOR_ADDRESS);
-    
-    let vested_amount = calculate_linear_vesting(start_time, INVESTOR_VESTING_DURATION, total_amount);
+
+    let vested_amount =
+        calculate_linear_vesting(start_time, INVESTOR_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TWO_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -374,11 +414,12 @@ pub fn get_investor_status() -> VestingStatus {
 pub fn get_network_status() -> VestingStatus {
     let start_time = read_start_time(NETWORK_ADDRESS);
     let total_amount = read_vesting_amount(NETWORK_ADDRESS);
-    
-    let vested_amount = calculate_linear_vesting(start_time, NETWORK_VESTING_DURATION, total_amount);
+
+    let vested_amount =
+        calculate_linear_vesting(start_time, NETWORK_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TWO_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -392,11 +433,12 @@ pub fn get_network_status() -> VestingStatus {
 pub fn get_marketing_status() -> VestingStatus {
     let start_time = read_start_time(MARKETING_ADDRESS);
     let total_amount = read_vesting_amount(MARKETING_ADDRESS);
-    
-    let vested_amount = calculate_linear_vesting(start_time, MARKETING_VESTING_DURATION, total_amount);
+
+    let vested_amount =
+        calculate_linear_vesting(start_time, MARKETING_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TWO_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -410,11 +452,12 @@ pub fn get_marketing_status() -> VestingStatus {
 pub fn get_airdrop_status() -> VestingStatus {
     let start_time = read_start_time(AIRDROP_ADDRESS);
     let total_amount = read_vesting_amount(AIRDROP_ADDRESS);
-    
-    let vested_amount = calculate_linear_vesting(start_time, AIRDROP_VESTING_DURATION, total_amount);
+
+    let vested_amount =
+        calculate_linear_vesting(start_time, AIRDROP_VESTING_DURATION, total_amount);
     let is_fully_vested = vested_amount == total_amount;
     let monthly_release = calculate_monthly_release(total_amount, TWO_YEARS_MONTHS);
-    
+
     VestingStatus::new(
         total_amount,
         vested_amount,
@@ -424,18 +467,6 @@ pub fn get_airdrop_status() -> VestingStatus {
         monthly_release,
     )
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 // This could replace the current check_vesting_transfer function:
 pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
@@ -464,15 +495,12 @@ pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
     amount <= status.vested_amount
 }
 
-
-
-
 pub fn get_treasury_vesting_details() -> (U256, U256, bool) {
     let status = get_treasury_status();
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -481,7 +509,7 @@ pub fn get_team_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -490,7 +518,7 @@ pub fn get_staking_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -499,7 +527,7 @@ pub fn get_investor_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -508,7 +536,7 @@ pub fn get_network_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -517,7 +545,7 @@ pub fn get_marketing_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }
 
@@ -526,6 +554,6 @@ pub fn get_airdrop_vesting_details() -> (U256, U256, bool) {
     (
         status.total_amount,
         status.vested_amount,
-        status.is_fully_vested
+        status.is_fully_vested,
     )
 }

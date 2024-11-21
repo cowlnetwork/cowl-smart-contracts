@@ -13,17 +13,10 @@ mod modalities;
 mod utils;
 mod vesting;
 use vesting::{
-    check_vesting_transfer,
-    get_treasury_vesting_details,
-    get_team_vesting_details,
-    get_staking_vesting_details,
-    get_investor_vesting_details,
-    get_network_vesting_details,
-    get_marketing_vesting_details,
-    get_airdrop_vesting_details,
-    calculate_vesting_allocations,
-    get_vesting_amount_key,
-    get_start_time_key,
+    calculate_vesting_allocations, check_vesting_transfer, get_airdrop_vesting_details,
+    get_investor_vesting_details, get_marketing_vesting_details, get_network_vesting_details,
+    get_staking_vesting_details, get_start_time_key, get_team_vesting_details,
+    get_treasury_vesting_details, get_vesting_amount_key,
 };
 
 use alloc::{
@@ -47,15 +40,16 @@ use casper_contract::{
 };
 use casper_types::{
     bytesrepr::ToBytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
-    ContractPackageHash, Key, RuntimeArgs, U256
+    ContractPackageHash, Key, RuntimeArgs, U256,
 };
 
 use constants::{
-    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
+    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, AIRDROP_ADDRESS, ALLOWANCES, AMOUNT, BALANCES,
     CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS_MODE,
-    HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
-    RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY, TREASURY_ADDRESS, TEAM_ADDRESS, STAKING_ADDRESS,
-    INVESTOR_ADDRESS, MARKETING_ADDRESS, NETWORK_ADDRESS, AIRDROP_ADDRESS, LIQUIDITY_ADDRESS
+    HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, INVESTOR_ADDRESS, LIQUIDITY_ADDRESS,
+    MARKETING_ADDRESS, MINTER_LIST, NAME, NETWORK_ADDRESS, NONE_LIST, OWNER, PACKAGE_HASH,
+    RECIPIENT, SECURITY_BADGES, SPENDER, STAKING_ADDRESS, SYMBOL, TEAM_ADDRESS, TOTAL_SUPPLY,
+    TREASURY_ADDRESS,
 };
 pub use error::Cep18Error;
 use events::{
@@ -287,15 +281,15 @@ pub extern "C" fn burn() {
 //     // Direct storage access
 //     let vesting_key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
 //     let start_key = vesting::get_start_time_key(constants::STAKING_ADDRESS);
-    
+
 //     let total_amount: U256 = storage::read(utils::get_uref(&vesting_key))
 //         .unwrap_or_revert()
 //         .unwrap_or_revert();
-        
+
 //     let start_time: u64 = storage::read(utils::get_uref(&start_key))
 //         .unwrap_or_revert()
 //         .unwrap_or_revert();
-    
+
 //     // Just return the total_amount for now
 //     runtime::ret(CLValue::from_t(total_amount).unwrap_or_revert());
 // }
@@ -304,23 +298,23 @@ pub extern "C" fn burn() {
 pub extern "C" fn debug_staking_status() {
     let vesting_key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
     let start_key = vesting::get_start_time_key(constants::STAKING_ADDRESS);
-    
+
     // This reads as U256
     let total_amount: U256 = storage::read(utils::get_uref(&vesting_key))
         .unwrap_or_revert()
         .unwrap_or_revert();
-        
+
     // In deploy results, you'll see something like:
     // "bytes": "0400ca9a3b", "parsed": "1000000000" as U512
-    
+
     let start_time: u64 = storage::read(utils::get_uref(&start_key))
         .unwrap_or_revert()
         .unwrap_or_revert();
-    
+
     let current_time: u64 = runtime::get_blocktime().into();
     let time_elapsed = current_time - start_time;
     let periods_elapsed = time_elapsed / vesting::TEN_MINUTES;
-    
+
     let vested_amount = if periods_elapsed >= 120 {
         total_amount
     } else {
@@ -333,25 +327,25 @@ pub extern "C" fn debug_staking_status() {
 
     // When returning, these U256 values will be shown as U512 in deploy results
     let result = (
-        total_amount,     // Will see as U512 in results
-        vested_amount,    // Will see as U512 in results
-        periods_elapsed   // Will see as integer in results
+        total_amount,    // Will see as U512 in results
+        vested_amount,   // Will see as U512 in results
+        periods_elapsed, // Will see as integer in results
     );
-    
+
     runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
 
 #[no_mangle]
 pub extern "C" fn get_staking_status() {
     let status = vesting::get_staking_status();
-    
+
     // Just for testing/debugging, let's return all values
     let result = (
         status.total_amount,
         status.vested_amount,
-        status.monthly_release
+        status.monthly_release,
     );
-    
+
     runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
 
@@ -361,7 +355,7 @@ pub extern "C" fn get_staking_status() {
 //     let key = vesting::get_vesting_amount_key(constants::STAKING_ADDRESS);
 //     let uref = utils::get_uref(&key);
 //     let amount: U256 = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
-    
+
 //     runtime::ret(CLValue::from_t(amount).unwrap_or_revert());
 // }
 
@@ -376,8 +370,8 @@ pub extern "C" fn init() {
     put_key(PACKAGE_HASH, package_hash);
     storage::new_dictionary(ALLOWANCES).unwrap_or_revert();
     let balances_uref = storage::new_dictionary(BALANCES).unwrap_or_revert();
-    let initial_supply:U256 = runtime::get_named_arg(TOTAL_SUPPLY);
-    
+    let initial_supply: U256 = runtime::get_named_arg(TOTAL_SUPPLY);
+
     // Get all vesting addresses
     let treasury_address: Key = runtime::get_named_arg(TREASURY_ADDRESS);
     let team_address: Key = runtime::get_named_arg(TEAM_ADDRESS);
@@ -389,7 +383,7 @@ pub extern "C" fn init() {
     let liquidity_address: Key = runtime::get_named_arg(LIQUIDITY_ADDRESS);
 
     let caller = get_caller();
-    
+
     let allocations = calculate_vesting_allocations(
         initial_supply,
         treasury_address,
@@ -399,13 +393,13 @@ pub extern "C" fn init() {
         network_address,
         marketing_address,
         airdrop_address,
-        liquidity_address
+        liquidity_address,
     );
 
     // Write initial balances and record events
     for allocation in allocations {
         write_balance_to(balances_uref, allocation.address, allocation.amount);
-        
+
         // Create the vesting amount key
         let vesting_key = get_vesting_amount_key(allocation.storage_key);
         let vesting_uref = storage::new_uref(allocation.amount);
@@ -456,7 +450,6 @@ pub extern "C" fn init() {
             );
         }
     }
-
 }
 
 /// Admin EntryPoint to manipulate the security access granted to users.
@@ -508,7 +501,7 @@ pub extern "C" fn change_security() {
 #[no_mangle]
 pub extern "C" fn vesting_details() {
     let vesting_type: String = runtime::get_named_arg("vesting_type");
-    
+
     let result = match vesting_type.as_str() {
         "treasury" => get_treasury_vesting_details(),
         "team" => get_team_vesting_details(),
@@ -519,10 +512,9 @@ pub extern "C" fn vesting_details() {
         "airdrop" => get_airdrop_vesting_details(),
         _ => runtime::revert(Cep18Error::InvalidVestingType),
     };
-    
+
     runtime::ret(CLValue::from_t(result).unwrap_or_revert());
 }
-
 
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
@@ -588,10 +580,19 @@ pub fn install_contract(name: &str) {
     named_keys.insert(NAME.to_string(), storage::new_uref(name).into());
     named_keys.insert(SYMBOL.to_string(), storage::new_uref(symbol).into());
     named_keys.insert(DECIMALS.to_string(), storage::new_uref(decimals).into());
-    named_keys.insert(TOTAL_SUPPLY.to_string(), storage::new_uref(total_supply).into(),);
-    named_keys.insert(EVENTS_MODE.to_string(),storage::new_uref(events_mode).into(),);
-    named_keys.insert(ENABLE_MINT_BURN.to_string(),storage::new_uref(enable_mint_burn).into(),);
-    
+    named_keys.insert(
+        TOTAL_SUPPLY.to_string(),
+        storage::new_uref(total_supply).into(),
+    );
+    named_keys.insert(
+        EVENTS_MODE.to_string(),
+        storage::new_uref(events_mode).into(),
+    );
+    named_keys.insert(
+        ENABLE_MINT_BURN.to_string(),
+        storage::new_uref(enable_mint_burn).into(),
+    );
+
     let entry_points = generate_entry_points();
 
     let hash_key_name = format!("{HASH_KEY_NAME_PREFIX}{name}");
