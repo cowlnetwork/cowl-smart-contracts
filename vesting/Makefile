@@ -3,11 +3,11 @@ prepare:
 
 build-contract:
 	cd contract && cargo build --release --target wasm32-unknown-unknown
-	wasm-strip contract/target/wasm32-unknown-unknown/release/contract.wasm
+	wasm-strip contract/target/wasm32-unknown-unknown/release/vesting.wasm
 
 test: build-contract
 	mkdir -p tests/wasm
-	cp contract/target/wasm32-unknown-unknown/release/contract.wasm tests/wasm
+	cp contract/target/wasm32-unknown-unknown/release/vesting.wasm tests/wasm
 	cd tests && cargo test
 
 clippy:

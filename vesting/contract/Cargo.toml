@@ -1,14 +1,16 @@
 [package]
-name = "contract"
+name = "vesting"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-casper-contract = "4.0.0"
+casper-contract = { version = "4.0.0", optional = true }
 casper-types = "4.0.2"
+casper-event-standard = { version = "0.5.0", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 
 [[bin]]
-name = "contract"
+name = "vesting"
 path = "src/main.rs"
 bench = false
 doctest = false
@@ -17,3 +19,7 @@ test = false
 [profile.release]
 codegen-units = 1
 lto = true
+
+[features]
+default = ["contract-support"]
+contract-support = ["dep:casper-contract"]
