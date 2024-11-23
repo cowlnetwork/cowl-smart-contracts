@@ -1,4 +1,4 @@
 [submodule "casper/cep18"]
 	path = casper/cep18
-	url = https://github.com/gRoussac/cep18.git
-	branch = v1.2.0
+	url = https://github.com/thamps/casper-cep18-token/
+	branch = cowl-cep18
