@@ -1,7 +1,16 @@
 //! Contains definition of the entry points.
-use crate::constants::{ENTRY_POINT_INSTALL, ENTRY_POINT_VESTING_DETAILS};
+use crate::constants::{
+    ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_DATA,
+    ARG_EVENTS_MODE, ARG_FROM, ARG_OPERATOR, ARG_TO, ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY,
+    ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE,
+    ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_STACKING_STATUS,
+    ENTRY_POINT_UPGRADE, ENTRY_POINT_VESTING_DETAILS, ENTRY_POINT_VESTING_INFO, NONE_LIST,
+};
 use alloc::{boxed::Box, string::String, vec, vec::Vec};
-use casper_types::{CLType, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Parameter};
+use casper_types::{
+    bytesrepr::Bytes, CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints,
+    Parameter,
+};
 
 /// Returns the `init` entry point.
 pub fn init() -> EntryPoint {
@@ -14,11 +23,20 @@ pub fn init() -> EntryPoint {
     )
 }
 
-// Single entry point for vesting details with proper boxing
+pub fn upgrade() -> EntryPoint {
+    EntryPoint::new(
+        ENTRY_POINT_UPGRADE,
+        vec![Parameter::new(ARG_CONTRACT_HASH, CLType::Key)],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
 pub fn vesting_details() -> EntryPoint {
     EntryPoint::new(
         String::from(ENTRY_POINT_VESTING_DETAILS),
-        vec![Parameter::new("vesting_type", CLType::String)],
+        vec![Parameter::new(ARG_VESTING_TYPE, CLType::String)],
         CLType::Tuple3([
             Box::new(CLType::U256), // total_amount
             Box::new(CLType::U256), // vested_amount
@@ -29,25 +47,73 @@ pub fn vesting_details() -> EntryPoint {
     )
 }
 
-pub fn get_staking_status() -> EntryPoint {
+pub fn vesting_info() -> EntryPoint {
     EntryPoint::new(
-        String::from("get_staking_status"),
-        Vec::new(),
-        CLType::U256,
+        String::from(ENTRY_POINT_VESTING_INFO),
+        vec![Parameter::new(ARG_VESTING_TYPE, CLType::String)],
+        CLType::Any,
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )
 }
 
-pub fn debug_staking_status() -> EntryPoint {
+pub fn staking_status() -> EntryPoint {
     EntryPoint::new(
-        String::from("debug_staking_status"),
+        String::from(ENTRY_POINT_STACKING_STATUS),
         Vec::new(),
-        CLType::Tuple3([
-            Box::new(CLType::U256), // total_amount
-            Box::new(CLType::U256), // start_time as U256
-            Box::new(CLType::U256), // current_time as U256
-        ]),
+        Bytes::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn check_vesting_transfer() -> EntryPoint {
+    EntryPoint::new(
+        String::from(ENTRY_POINT_CHECK_VESTING_TRANSFER),
+        vec![
+            Parameter::new(ARG_OPERATOR, CLType::Key),
+            Parameter::new(ARG_FROM, CLType::Key),
+            Parameter::new(ARG_TO, CLType::Key),
+            Parameter::new(ARG_AMOUNT, CLType::U256),
+            Parameter::new(ARG_DATA, CLType::Option(Box::new(Bytes::cl_type()))),
+        ],
+        CLType::Any,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn set_modalities() -> EntryPoint {
+    EntryPoint::new(
+        ENTRY_POINT_SET_MODALITIES,
+        vec![Parameter::new(ARG_EVENTS_MODE, CLType::U8)],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn change_security() -> EntryPoint {
+    EntryPoint::new(
+        ENTRY_POINT_CHANGE_SECURITY,
+        vec![
+            Parameter::new(ADMIN_LIST, CLType::List(Box::new(CLType::Key))),
+            Parameter::new(NONE_LIST, CLType::List(Box::new(CLType::Key))),
+        ],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn set_cowl_cep18_contract_package() -> EntryPoint {
+    EntryPoint::new(
+        String::from(ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE),
+        vec![Parameter::new(
+            ARG_COWL_CEP18_CONTRACT_PACKAGE,
+            CLType::Option(Box::new(CLType::Key)),
+        )],
+        CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )
@@ -57,8 +123,14 @@ pub fn debug_staking_status() -> EntryPoint {
 pub fn generate_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(init());
+    entry_points.add_entry_point(upgrade());
     entry_points.add_entry_point(vesting_details());
-    entry_points.add_entry_point(get_staking_status());
-    entry_points.add_entry_point(debug_staking_status());
+    entry_points.add_entry_point(vesting_info());
+    entry_points.add_entry_point(staking_status());
+    entry_points.add_entry_point(check_vesting_transfer());
+    entry_points.add_entry_point(set_modalities());
+    entry_points.add_entry_point(change_security());
+    entry_points.add_entry_point(set_cowl_cep18_contract_package());
+
     entry_points
 }

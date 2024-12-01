@@ -4,15 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dev-dependencies]
-casper-contract = { version = "4.0.0", default-features = false, features = [
-  "test-support",
-] }
+cowl-vesting = { path = "../contract", default-features = false }
 casper-engine-test-support = { version = "7.0.3", features = ["test-support"] }
 casper-execution-engine = "7.0.3"
 casper-types = "4.0.2"
+casper-event-standard = { version = "0.5.0", default-features = false }
 
-[[bin]]
-name = "integration-tests"
-path = "src/integration_tests.rs"
+[lib]
+name = "tests"
 bench = false
 doctest = false

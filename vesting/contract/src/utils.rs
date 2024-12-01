@@ -1,5 +1,8 @@
 #[cfg(feature = "contract-support")]
+use crate::constants::ARG_COWL_CEP18_CONTRACT_PACKAGE;
+#[cfg(feature = "contract-support")]
 use crate::error::VestingError;
+#[cfg(feature = "contract-support")]
 use alloc::string::String;
 #[cfg(feature = "contract-support")]
 use alloc::{borrow::ToOwned, string::ToString, vec, vec::Vec};
@@ -285,4 +288,13 @@ fn get_named_arg_size(name: &str) -> Option<usize> {
         Err(ApiError::MissingArgument) => None,
         Err(e) => runtime::revert(e),
     }
+}
+
+#[cfg(feature = "contract-support")]
+pub fn get_cowl_cep18_contract_package_hash() -> ContractPackageHash {
+    get_stored_value_with_user_errors(
+        ARG_COWL_CEP18_CONTRACT_PACKAGE,
+        VestingError::MissingTokenContractPackage,
+        VestingError::InvalidTokenContractPackage,
+    )
 }

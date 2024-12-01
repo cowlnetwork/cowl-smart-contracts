@@ -1,29 +1,84 @@
+use time::Duration;
+
 pub const PREFIX_ACCESS_KEY_NAME: &str = "vesting_contract_package_access";
 pub const PREFIX_VESTING: &str = "vesting";
 pub const PREFIX_CONTRACT_NAME: &str = "vesting_contract_hash";
 pub const PREFIX_CONTRACT_VERSION: &str = "vesting_contract_version";
 pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "vesting_contract_package_hash";
 
+pub const SUFFIX_VESTING_AMOUNT: &str = "_vesting_amount";
+pub const SUFFIX_START_TIME: &str = "_start_time";
+
 pub const ADDRESS_TREASURY: &str = "address_treasury";
-pub const ADDRESS_TEAM: &str = "address_team";
-pub const ADDRESS_STAKING: &str = "address_staking";
-pub const ADDRESS_INVESTOR: &str = "address_investor";
-pub const ADDRESS_NETWORK: &str = "address_network";
-pub const ADDRESS_MARKETING: &str = "address_marketing";
-pub const ADDRESS_AIRDROP: &str = "address_airdrop";
+pub const ADDRESS_CONTRIBUTOR: &str = "address_contributor";
+pub const ADDRESS_DEVELOPMENT: &str = "address_development";
 pub const ADDRESS_LIQUIDITY: &str = "address_liquidity";
+pub const ADDRESS_COMMUNITY: &str = "address_community";
+
+pub const ADDRESS_STACKING: &str = "address_staking";
+pub const TOTAL_SUPPLY: &str = "total_supply";
 
 pub const ENTRY_POINT_INSTALL: &str = "install";
 pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
 pub const ENTRY_POINT_VESTING_DETAILS: &str = "vesting_details";
+pub const ENTRY_POINT_VESTING_INFO: &str = "vesting_info";
+pub const ENTRY_POINT_STACKING_STATUS: &str = "staking_status";
+pub const ENTRY_POINT_CHECK_VESTING_TRANSFER: &str = "check_vesting_transfer";
+pub const ENTRY_POINT_SET_MODALITIES: &str = "set_modalities";
+pub const ENTRY_POINT_CHANGE_SECURITY: &str = "change_security";
+pub const ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE: &str = "set_cowl_cep18_contract_package";
+pub const ENTRY_POINT_TOTAL_SUPPLY: &str = "total_supply";
+pub const ENTRY_POINT_SET_TRANSFER_FILTER: &str = "set_transfer_filter";
+pub const ENTRY_POINT_MINT: &str = "mint";
+pub const ENTRY_POINT_TRANSFER: &str = "transfer";
+pub const ENTRY_POINT_BALANCE_OF: &str = "balance_of";
 
+pub const ARG_ADDRESS: &str = "address";
 pub const ARG_EVENTS_MODE: &str = "events_mode";
 pub const ARG_NAME: &str = "name";
 pub const ARG_UPGRADE_FLAG: &str = "upgrade";
 pub const ARG_CONTRACT_HASH: &str = "contract_hash";
 pub const ARG_PACKAGE_HASH: &str = "package_hash";
+pub const ARG_VESTING_TYPE: &str = "vesting_type";
+pub const ARG_OPERATOR: &str = "operator";
+pub const ARG_DATA: &str = "data";
+pub const ARG_FROM: &str = "from";
+pub const ARG_TO: &str = "to";
+pub const ARG_AMOUNT: &str = "amount";
+pub const ARG_COWL_CEP18_CONTRACT_PACKAGE: &str = "cowl_cep18_contract_package";
+pub const ARG_INSTALLER: &str = "installer";
+pub const ARG_OWNER: &str = "owner";
+pub const ARG_RECIPIENT: &str = "recipient";
+pub const ARG_ENABLE_MINT_BURN: &str = "enable_mint_burn";
+pub const ARG_TRANSFER_FILTER_CONTRACT_PACKAGE: &str = "transfer_filter_contract_package";
+pub const ARG_TRANSFER_FILTER_METHOD: &str = "transfer_filter_method";
+
+pub const ARG_FILTER_CONTRACT_RETURN_VALUE: &str = "return_value";
 
 pub const DICT_SECURITY_BADGES: &str = "security_badges";
+pub const DICT_ADDRESSES: &str = "addresses";
+pub const DICT_START_TIME: &str = "start_time";
+pub const DICT_VESTING_AMOUNT: &str = "vesting_amount";
 
 pub const ADMIN_LIST: &str = "admin_list";
+pub const MINTER_LIST: &str = "minter_list";
 pub const NONE_LIST: &str = "none_list";
+
+pub const COWL_CEP_18_TOKEN_TOTAL_SUPPLY: u64 = 5_500_000_000;
+
+// Durations
+const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60; // A standard year in seconds
+pub const MONTH_IN_SECONDS: u64 = YEAR_IN_SECONDS / 12; // Approximation for a month
+const ONE_YEAR_IN_SECONDS: Duration = Duration::seconds(YEAR_IN_SECONDS as i64);
+// const TWO_YEARS_IN_SECONDS: Duration = Duration::seconds(2 * YEAR_IN_SECONDS as i64);
+const FOUR_YEARS_IN_SECONDS: Duration = Duration::seconds(4 * YEAR_IN_SECONDS as i64);
+// const TEN_YEARS_IN_SECONDS: Duration = Duration::seconds(10 * YEAR_IN_SECONDS as i64);
+
+/// Lock durations for each vesting type
+pub const DURATION_LIQUIDITY_VESTING: Option<Duration> = None;
+pub const DURATION_CONTRIBUTOR_VESTING: Option<Duration> = Some(ONE_YEAR_IN_SECONDS);
+pub const DURATION_DEVELOPMENT_VESTING: Option<Duration> = Some(ONE_YEAR_IN_SECONDS);
+pub const DURATION_TREASURY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
+pub const DURATION_COMMUNITY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
+
+pub const DURATION_STAKING_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
