@@ -6,9 +6,6 @@ pub const PREFIX_CONTRACT_NAME: &str = "vesting_contract_hash";
 pub const PREFIX_CONTRACT_VERSION: &str = "vesting_contract_version";
 pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "vesting_contract_package_hash";
 
-pub const SUFFIX_VESTING_AMOUNT: &str = "_vesting_amount";
-pub const SUFFIX_START_TIME: &str = "_start_time";
-
 pub const ADDRESS_TREASURY: &str = "address_treasury";
 pub const ADDRESS_CONTRIBUTOR: &str = "address_contributor";
 pub const ADDRESS_DEVELOPMENT: &str = "address_development";
@@ -20,7 +17,7 @@ pub const TOTAL_SUPPLY: &str = "total_supply";
 
 pub const ENTRY_POINT_INSTALL: &str = "install";
 pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
-pub const ENTRY_POINT_VESTING_DETAILS: &str = "vesting_details";
+pub const ENTRY_POINT_VESTING_STATUS: &str = "vesting_status";
 pub const ENTRY_POINT_VESTING_INFO: &str = "vesting_info";
 pub const ENTRY_POINT_STACKING_STATUS: &str = "staking_status";
 pub const ENTRY_POINT_CHECK_VESTING_TRANSFER: &str = "check_vesting_transfer";

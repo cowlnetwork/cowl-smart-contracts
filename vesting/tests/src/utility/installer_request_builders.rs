@@ -18,10 +18,11 @@ use cowl_vesting::{
         ADDRESS_COMMUNITY, ADDRESS_CONTRIBUTOR, ADDRESS_DEVELOPMENT, ADDRESS_LIQUIDITY,
         ADDRESS_STACKING, ADDRESS_TREASURY, ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE,
         ARG_ENABLE_MINT_BURN, ARG_EVENTS_MODE, ARG_NAME, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
-        ARG_TRANSFER_FILTER_METHOD, ENTRY_POINT_CHANGE_SECURITY,
-        ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_SET_MODALITIES, NONE_LIST,
+        ARG_TRANSFER_FILTER_METHOD, ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY,
+        ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_VESTING_INFO,
+        ENTRY_POINT_VESTING_STATUS, NONE_LIST,
     },
-    enums::EventsMode,
+    enums::{EventsMode, VestingType},
 };
 use std::collections::HashMap;
 
@@ -220,6 +221,46 @@ pub fn cowl_vesting_set_modalities<'a>(
     )
     .build();
     builder.exec(set_modalities_request)
+}
+
+pub fn cowl_vesting_vesting_status<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    cowl_vesting: &'a ContractHash,
+    sender: &AccountHash,
+    vesting_type: VestingType,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let args = runtime_args! {
+        ARG_VESTING_TYPE => vesting_type.to_string()
+    };
+
+    let vesting_status_request = ExecuteRequestBuilder::contract_call_by_hash(
+        *sender,
+        *cowl_vesting,
+        ENTRY_POINT_VESTING_STATUS,
+        args,
+    )
+    .build();
+    builder.exec(vesting_status_request)
+}
+
+pub fn cowl_vesting_vesting_info<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    cowl_vesting: &'a ContractHash,
+    sender: &AccountHash,
+    vesting_type: VestingType,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let args = runtime_args! {
+        ARG_VESTING_TYPE => vesting_type.to_string()
+    };
+
+    let vesting_info_request = ExecuteRequestBuilder::contract_call_by_hash(
+        *sender,
+        *cowl_vesting,
+        ENTRY_POINT_VESTING_INFO,
+        args,
+    )
+    .build();
+    builder.exec(vesting_info_request)
 }
 
 pub struct SecurityLists {

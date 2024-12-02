@@ -19,13 +19,10 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    bytesrepr::{Bytes, FromBytes, ToBytes},
-    ApiError, U256,
+    bytesrepr::Bytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
+    ContractPackageHash, Key, RuntimeArgs,
 };
-use casper_types::{
-    contracts::NamedKeys, runtime_args, CLValue, ContractHash, ContractPackageHash, Key,
-    RuntimeArgs,
-};
+use casper_types::{ApiError, U256};
 use cowl_vesting::{
     constants::{
         ADDRESS_COMMUNITY, ADDRESS_CONTRIBUTOR, ADDRESS_DEVELOPMENT, ADDRESS_LIQUIDITY,
@@ -54,14 +51,11 @@ use cowl_vesting::{
         get_optional_named_arg_with_user_errors, get_stored_value_with_user_errors,
         get_verified_caller, set_dictionary_value_for_key,
     },
-    vesting::{
-        calculate_vesting_allocations, get_vesting_address_info_by_type, get_vesting_details,
-        VestingAllocation,
-    },
+    vesting::{calculate_vesting_allocations, ret_vesting_info, ret_vesting_status},
 };
 
 #[no_mangle]
-pub extern "C" fn vesting_details() {
+pub extern "C" fn vesting_status() {
     let vesting_type: VestingType = get_named_arg_with_user_errors::<String>(
         ARG_VESTING_TYPE,
         VestingError::MissingVestingType,
@@ -71,8 +65,7 @@ pub extern "C" fn vesting_details() {
     .as_str()
     .try_into()
     .unwrap_or_revert_with(VestingError::InvalidVestingType);
-
-    ret(CLValue::from_t(get_vesting_details(vesting_type)).unwrap_or_revert());
+    ret_vesting_status(vesting_type);
 }
 
 #[no_mangle]
@@ -86,26 +79,12 @@ pub extern "C" fn vesting_info() {
     .as_str()
     .try_into()
     .unwrap_or_revert_with(VestingError::InvalidVestingType);
-    vesting_info_internal(vesting_type)
-}
-
-fn vesting_info_internal(vesting_type: VestingType) {
-    let vesting_info = get_vesting_address_info_by_type(vesting_type)
-        .unwrap_or_revert_with(VestingError::InvalidVestingType);
-
-    // Serialize vesting_info into bytes
-    let bytes = vesting_info.to_bytes().unwrap_or_revert();
-
-    // Deserialize bytes into a result of (CLValue, &[u8])
-    let (cl_value, _remaining_bytes) = CLValue::from_bytes(&bytes).unwrap_or_revert();
-
-    // Return the CLValue as the result
-    ret(cl_value);
+    ret_vesting_info(vesting_type);
 }
 
 #[no_mangle]
 pub extern "C" fn staking_status() {
-    vesting_info_internal(VestingType::Staking);
+    ret_vesting_info(VestingType::Staking);
 }
 
 // Check that some values are sent by token contract and return a TransferFilterContractResult
@@ -317,19 +296,21 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
         },
     );
 
-    let allocations: Vec<VestingAllocation> = calculate_vesting_allocations(total_supply);
+    let allocations = calculate_vesting_allocations(total_supply);
 
     // Write initial balances
     for allocation in allocations {
-        call_versioned_contract::<()>(
-            contract_package_hash,
-            None,
-            ENTRY_POINT_TRANSFER,
-            runtime_args! {
-                ARG_RECIPIENT => allocation.vesting_address_key,
-                ARG_AMOUNT => allocation.vesting_amount
-            },
-        );
+        if allocation.vesting_amount > U256::zero() {
+            call_versioned_contract::<()>(
+                contract_package_hash,
+                None,
+                ENTRY_POINT_TRANSFER,
+                runtime_args! {
+                    ARG_RECIPIENT => allocation.vesting_address_key,
+                    ARG_AMOUNT => allocation.vesting_amount
+                },
+            );
+        }
 
         let recepient_balance: U256 = call_versioned_contract(
             contract_package_hash,

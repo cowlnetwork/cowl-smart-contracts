@@ -14,7 +14,10 @@ mod security;
 mod modalities;
 
 #[cfg(test)]
-mod filter;
+mod vesting_status;
+
+#[cfg(test)]
+mod vesting_info;
 
 #[cfg(test)]
 mod tests {

@@ -6,9 +6,9 @@ use crate::{
         DURATION_TREASURY_VESTING,
     },
     error::VestingError,
-    vesting::VestingAddressInfo,
+    vesting::VestingInfo,
 };
-use alloc::{vec, vec::Vec};
+use alloc::{fmt, vec, vec::Vec};
 use casper_types::{
     bytesrepr::{Error, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
     CLType, CLTyped,
@@ -61,6 +61,19 @@ impl ToBytes for VestingType {
     }
 }
 
+impl FromBytes for VestingType {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        if bytes.is_empty() {
+            return Err(Error::EarlyEndOfStream);
+        }
+
+        // Extract the first byte
+        let (value, rem) = bytes.split_at(1);
+        let vesting_type = VestingType::try_from(value[0]).map_err(|_| Error::Formatting)?;
+        Ok((vesting_type, rem))
+    }
+}
+
 impl TryFrom<u8> for VestingType {
     type Error = VestingError;
 
@@ -99,38 +112,51 @@ impl TryFrom<&str> for VestingType {
     }
 }
 
-pub const VESTING_INFO: &[VestingAddressInfo] = &[
-    VestingAddressInfo {
+impl fmt::Display for VestingType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VestingType::Treasury => write!(f, "Treasury"),
+            VestingType::Contributor => write!(f, "Contributor"),
+            VestingType::Development => write!(f, "Development"),
+            VestingType::Liquidity => write!(f, "Liquidity"),
+            VestingType::Community => write!(f, "Community"),
+            VestingType::Staking => write!(f, "Staking"),
+        }
+    }
+}
+
+pub const VESTING_INFO: &[VestingInfo] = &[
+    VestingInfo {
         vesting_type: VestingType::Treasury,
         vesting_address: ADDRESS_TREASURY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_TREASURY_VESTING,
     },
-    VestingAddressInfo {
+    VestingInfo {
         vesting_type: VestingType::Contributor,
         vesting_address: ADDRESS_CONTRIBUTOR,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_CONTRIBUTOR_VESTING,
     },
-    VestingAddressInfo {
+    VestingInfo {
         vesting_type: VestingType::Development,
         vesting_address: ADDRESS_DEVELOPMENT,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_LIQUIDITY_VESTING,
     },
-    VestingAddressInfo {
+    VestingInfo {
         vesting_type: VestingType::Liquidity,
         vesting_address: ADDRESS_LIQUIDITY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_LIQUIDITY_VESTING,
     },
-    VestingAddressInfo {
+    VestingInfo {
         vesting_type: VestingType::Community,
         vesting_address: ADDRESS_COMMUNITY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_COMMUNITY_VESTING,
     },
-    VestingAddressInfo {
+    VestingInfo {
         vesting_type: VestingType::Staking,
         vesting_address: ADDRESS_STACKING,
         maybe_vesting_address_key: None,
@@ -142,17 +168,17 @@ pub const VESTING_INFO: &[VestingAddressInfo] = &[
 pub fn get_vesting_duration(vesting_type: VestingType) -> Option<Duration> {
     VESTING_INFO
         .iter()
-        .find(|vesting_address_info| vesting_address_info.vesting_type == vesting_type)
-        .and_then(|vesting_address_info| vesting_address_info.vesting_duration)
+        .find(|vesting_info| vesting_info.vesting_type == vesting_type)
+        .and_then(|vesting_info| vesting_info.vesting_duration)
 }
 
 pub const VESTING_PERCENTAGES: &[(VestingType, u8)] = &[
     (VestingType::Liquidity, 20),
-    (VestingType::Contributor, 10),
+    (VestingType::Contributor, 12),
     (VestingType::Development, 10),
     (VestingType::Treasury, 30),
     (VestingType::Community, 28),
-    (VestingType::Staking, 2),
+    (VestingType::Staking, 0),
 ];
 
 #[repr(u8)]
