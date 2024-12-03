@@ -2,8 +2,8 @@ use crate::{
     constants::{
         ADDRESS_COMMUNITY, ADDRESS_CONTRIBUTOR, ADDRESS_DEVELOPMENT, ADDRESS_LIQUIDITY,
         ADDRESS_STACKING, ADDRESS_TREASURY, DURATION_COMMUNITY_VESTING,
-        DURATION_CONTRIBUTOR_VESTING, DURATION_LIQUIDITY_VESTING, DURATION_STAKING_VESTING,
-        DURATION_TREASURY_VESTING,
+        DURATION_CONTRIBUTOR_VESTING, DURATION_DEVELOPMENT_VESTING, DURATION_LIQUIDITY_VESTING,
+        DURATION_STAKING_VESTING, DURATION_TREASURY_VESTING,
     },
     error::VestingError,
     vesting::VestingInfo,
@@ -44,10 +44,7 @@ pub enum VestingType {
     Development = 2,
     Liquidity = 3,
     Community = 4,
-    Staking = 99,
-    // Network = 4,
-    // Marketing = 5,
-    // Airdrop = 6,
+    Staking = 128,
 }
 
 impl ToBytes for VestingType {
@@ -84,7 +81,7 @@ impl TryFrom<u8> for VestingType {
             2 => Ok(VestingType::Development),
             3 => Ok(VestingType::Liquidity),
             4 => Ok(VestingType::Community),
-            7 => Ok(VestingType::Liquidity),
+            128 => Ok(VestingType::Staking),
             _ => Err(VestingError::InvalidVestingType),
         }
     }
@@ -142,7 +139,7 @@ pub const VESTING_INFO: &[VestingInfo] = &[
         vesting_type: VestingType::Development,
         vesting_address: ADDRESS_DEVELOPMENT,
         maybe_vesting_address_key: None,
-        vesting_duration: DURATION_LIQUIDITY_VESTING,
+        vesting_duration: DURATION_DEVELOPMENT_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Liquidity,

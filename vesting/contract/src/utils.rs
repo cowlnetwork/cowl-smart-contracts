@@ -164,7 +164,7 @@ pub fn get_dictionary_value_from_key<T: CLTyped + FromBytes>(
 }
 
 #[cfg(feature = "contract-support")]
-pub fn set_dictionary_value_for_key<T: CLTyped + ToBytes + Copy>(
+pub fn set_dictionary_value_for_key<T: CLTyped + ToBytes + Clone>(
     dictionary_name: &str,
     key: &str,
     value: &T,
@@ -174,7 +174,7 @@ pub fn set_dictionary_value_for_key<T: CLTyped + ToBytes + Copy>(
         VestingError::MissingStorageUref,
         VestingError::InvalidStorageUref,
     );
-    storage::dictionary_put::<T>(seed_uref, key, *value)
+    storage::dictionary_put::<T>(seed_uref, key, value.clone())
 }
 
 #[cfg(feature = "contract-support")]

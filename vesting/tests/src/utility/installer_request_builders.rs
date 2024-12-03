@@ -228,19 +228,24 @@ pub fn cowl_vesting_vesting_status<'a>(
     cowl_vesting: &'a ContractHash,
     sender: &AccountHash,
     vesting_type: VestingType,
+    block_time: Option<u64>,
 ) -> &'a mut InMemoryWasmTestBuilder {
     let args = runtime_args! {
         ARG_VESTING_TYPE => vesting_type.to_string()
     };
 
-    let vesting_status_request = ExecuteRequestBuilder::contract_call_by_hash(
+    let mut vesting_status_request = ExecuteRequestBuilder::contract_call_by_hash(
         *sender,
         *cowl_vesting,
         ENTRY_POINT_VESTING_STATUS,
         args,
-    )
-    .build();
-    builder.exec(vesting_status_request)
+    );
+
+    if let Some(block_time) = block_time {
+        vesting_status_request = vesting_status_request.with_block_time(block_time)
+    }
+
+    builder.exec(vesting_status_request.build())
 }
 
 pub fn cowl_vesting_vesting_info<'a>(

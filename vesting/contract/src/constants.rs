@@ -19,7 +19,6 @@ pub const ENTRY_POINT_INSTALL: &str = "install";
 pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
 pub const ENTRY_POINT_VESTING_STATUS: &str = "vesting_status";
 pub const ENTRY_POINT_VESTING_INFO: &str = "vesting_info";
-pub const ENTRY_POINT_STACKING_STATUS: &str = "staking_status";
 pub const ENTRY_POINT_CHECK_VESTING_TRANSFER: &str = "check_vesting_transfer";
 pub const ENTRY_POINT_SET_MODALITIES: &str = "set_modalities";
 pub const ENTRY_POINT_CHANGE_SECURITY: &str = "change_security";
@@ -56,6 +55,8 @@ pub const DICT_SECURITY_BADGES: &str = "security_badges";
 pub const DICT_ADDRESSES: &str = "addresses";
 pub const DICT_START_TIME: &str = "start_time";
 pub const DICT_VESTING_AMOUNT: &str = "vesting_amount";
+pub const DICT_VESTING_INFO: &str = "vesting_info";
+pub const DICT_VESTING_STATUS: &str = "vesting_status";
 
 pub const ADMIN_LIST: &str = "admin_list";
 pub const MINTER_LIST: &str = "minter_list";
@@ -64,7 +65,7 @@ pub const NONE_LIST: &str = "none_list";
 pub const COWL_CEP_18_TOKEN_TOTAL_SUPPLY: u64 = 5_500_000_000;
 
 // Durations
-const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60; // A standard year in seconds
+pub const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60; // A standard year in seconds
 pub const MONTH_IN_SECONDS: u64 = YEAR_IN_SECONDS / 12; // Approximation for a month
 const ONE_YEAR_IN_SECONDS: Duration = Duration::seconds(YEAR_IN_SECONDS as i64);
 // const TWO_YEARS_IN_SECONDS: Duration = Duration::seconds(2 * YEAR_IN_SECONDS as i64);
@@ -78,4 +79,4 @@ pub const DURATION_DEVELOPMENT_VESTING: Option<Duration> = Some(ONE_YEAR_IN_SECO
 pub const DURATION_TREASURY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
 pub const DURATION_COMMUNITY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
 
-pub const DURATION_STAKING_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
+pub const DURATION_STAKING_VESTING: Option<Duration> = None;

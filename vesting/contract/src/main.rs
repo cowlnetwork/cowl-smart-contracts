@@ -32,11 +32,11 @@ use cowl_vesting::{
         ARG_OWNER, ARG_PACKAGE_HASH, ARG_RECIPIENT, ARG_TO, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
         ARG_TRANSFER_FILTER_METHOD, ARG_UPGRADE_FLAG, ARG_VESTING_TYPE,
         COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES, DICT_SECURITY_BADGES, DICT_START_TIME,
-        DICT_VESTING_AMOUNT, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_CHANGE_SECURITY,
-        ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_INSTALL, ENTRY_POINT_MINT,
-        ENTRY_POINT_SET_TRANSFER_FILTER, ENTRY_POINT_TOTAL_SUPPLY, ENTRY_POINT_TRANSFER,
-        ENTRY_POINT_UPGRADE, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME,
-        PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
+        DICT_VESTING_AMOUNT, DICT_VESTING_INFO, DICT_VESTING_STATUS, ENTRY_POINT_BALANCE_OF,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_INSTALL,
+        ENTRY_POINT_MINT, ENTRY_POINT_SET_TRANSFER_FILTER, ENTRY_POINT_TOTAL_SUPPLY,
+        ENTRY_POINT_TRANSFER, ENTRY_POINT_UPGRADE, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME,
+        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
@@ -80,11 +80,6 @@ pub extern "C" fn vesting_info() {
     .try_into()
     .unwrap_or_revert_with(VestingError::InvalidVestingType);
     ret_vesting_info(vesting_type);
-}
-
-#[no_mangle]
-pub extern "C" fn staking_status() {
-    ret_vesting_info(VestingType::Staking);
 }
 
 // Check that some values are sent by token contract and return a TransferFilterContractResult
@@ -272,6 +267,8 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
     storage::new_dictionary(DICT_ADDRESSES).unwrap_or_revert();
     storage::new_dictionary(DICT_START_TIME).unwrap_or_revert();
     storage::new_dictionary(DICT_VESTING_AMOUNT).unwrap_or_revert();
+    storage::new_dictionary(DICT_VESTING_INFO).unwrap_or_revert();
+    storage::new_dictionary(DICT_VESTING_STATUS).unwrap_or_revert();
 
     for vesting_info in VESTING_INFO.iter() {
         set_dictionary_value_for_key(
@@ -325,11 +322,11 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
 
         set_dictionary_value_for_key(
             DICT_VESTING_AMOUNT,
-            allocation.vesting_address,
+            &allocation.vesting_address,
             &recepient_balance,
         );
         let start_time: u64 = runtime::get_blocktime().into();
-        set_dictionary_value_for_key(DICT_START_TIME, allocation.vesting_address, &start_time);
+        set_dictionary_value_for_key(DICT_START_TIME, &allocation.vesting_address, &start_time);
     }
 
     let actual_supply: U256 = call_versioned_contract(

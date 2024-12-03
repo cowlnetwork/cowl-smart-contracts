@@ -3,8 +3,8 @@ use crate::constants::{
     ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_DATA,
     ARG_EVENTS_MODE, ARG_FROM, ARG_OPERATOR, ARG_TO, ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY,
     ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE,
-    ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_STACKING_STATUS,
-    ENTRY_POINT_UPGRADE, ENTRY_POINT_VESTING_INFO, ENTRY_POINT_VESTING_STATUS, NONE_LIST,
+    ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_UPGRADE, ENTRY_POINT_VESTING_INFO,
+    ENTRY_POINT_VESTING_STATUS, NONE_LIST,
 };
 use alloc::{boxed::Box, string::String, vec, vec::Vec};
 use casper_types::{
@@ -51,16 +51,6 @@ pub fn vesting_info() -> EntryPoint {
     EntryPoint::new(
         String::from(ENTRY_POINT_VESTING_INFO),
         vec![Parameter::new(ARG_VESTING_TYPE, CLType::String)],
-        Bytes::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    )
-}
-
-pub fn staking_status() -> EntryPoint {
-    EntryPoint::new(
-        String::from(ENTRY_POINT_STACKING_STATUS),
-        Vec::new(),
         Bytes::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -126,7 +116,6 @@ pub fn generate_entry_points() -> EntryPoints {
     entry_points.add_entry_point(upgrade());
     entry_points.add_entry_point(vesting_status());
     entry_points.add_entry_point(vesting_info());
-    entry_points.add_entry_point(staking_status());
     entry_points.add_entry_point(check_vesting_transfer());
     entry_points.add_entry_point(set_modalities());
     entry_points.add_entry_point(change_security());
