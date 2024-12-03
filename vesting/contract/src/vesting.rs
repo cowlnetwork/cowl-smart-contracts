@@ -335,18 +335,18 @@ fn get_vesting_status(
 
     // Handle linear vesting or immediate full vesting based on type
     let vested_amount = match vesting_info.vesting_type {
-        VestingType::Treasury => {
-            // Treasury has an immediate unlock at the end of the lock duration
-            if let Some(duration) = vesting_info.vesting_duration {
-                if elapsed_time >= duration.whole_seconds() as u64 {
-                    total_amount
-                } else {
-                    U256::zero()
-                }
-            } else {
-                U256::zero() // If duration is None, default to no vesting
-            }
-        }
+        // VestingType::Treasury => {
+        //     // Treasury has an immediate unlock at the end of the lock duration
+        //     if let Some(duration) = vesting_info.vesting_duration {
+        //         if elapsed_time >= duration.whole_seconds() as u64 {
+        //             total_amount
+        //         } else {
+        //             U256::zero()
+        //         }
+        //     } else {
+        //         U256::zero() // If duration is None, default to no vesting
+        //     }
+        // }
         _ => {
             // Linear vesting for other types
             if let Some(duration) = vesting_info.vesting_duration {
@@ -367,7 +367,11 @@ fn get_vesting_status(
     };
 
     let monthly_release = if let Some(duration) = vesting_info.vesting_duration {
-        calculate_monthly_release(total_amount, duration)
+        if !is_fully_vested {
+            calculate_monthly_release(total_amount, duration)
+        } else {
+            U256::zero()
+        }
     } else {
         U256::zero()
     };
