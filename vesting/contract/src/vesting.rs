@@ -7,10 +7,7 @@ use crate::{
     },
     enums::{VESTING_INFO, VESTING_PERCENTAGES},
     error::VestingError,
-    utils::{
-        get_cowl_cep18_contract_package_hash, get_dictionary_value_from_key,
-        set_dictionary_value_for_key,
-    },
+    utils::{get_dictionary_value_from_key, set_dictionary_value_for_key},
 };
 #[cfg(feature = "contract-support")]
 use alloc::string::ToString;
@@ -190,6 +187,7 @@ where
 }
 
 impl VestingStatus {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         vesting_type: VestingType,
         total_amount: U256,
@@ -197,7 +195,7 @@ impl VestingStatus {
         is_fully_vested: bool,
         vesting_duration: Duration,
         start_time: Duration,
-        time_until_next: Duration,
+        time_until_next_release: Duration,
         monthly_release_amount: U256,
         released_amount: U256,
         available_for_release_amount: U256,
@@ -209,7 +207,7 @@ impl VestingStatus {
             is_fully_vested,
             vesting_duration,
             start_time,
-            time_until_next_release: time_until_next,
+            time_until_next_release,
             monthly_release_amount,
             released_amount,
             available_for_release_amount,
@@ -293,9 +291,6 @@ impl FromBytes for VestingStatus {
 #[cfg(feature = "contract-support")]
 pub fn ret_vesting_status(vesting_type: VestingType) {
     let vesting_status = update_vesting_status(vesting_type);
-
-    // runtime::print(&format!("{:?}", vesting_status));
-
     let result = CLValue::from_t(vesting_status).unwrap_or_revert();
     ret(result);
 }
@@ -303,6 +298,8 @@ pub fn ret_vesting_status(vesting_type: VestingType) {
 #[cfg(feature = "contract-support")]
 pub fn update_vesting_status(vesting_type: VestingType) -> VestingStatus {
     let vesting_status = get_vesting_status_by_type(vesting_type);
+
+    // runtime::print(&format!("{:?}", vesting_status));
 
     set_dictionary_value_for_key(
         DICT_VESTING_STATUS,
@@ -460,7 +457,7 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
 }
 
 #[cfg(feature = "contract-support")]
-pub fn get_vesting_transfer(owner: Key, amount: U256) -> bool {
+pub fn get_vesting_transfer(owner: Key, requested_amount: U256) -> bool {
     // Retrieve vesting information for the owner address
 
     let vesting_info = match get_vesting_info_by_key(&owner) {
@@ -484,24 +481,24 @@ pub fn get_vesting_transfer(owner: Key, amount: U256) -> bool {
     )
     .unwrap_or_default();
 
-    let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
-    let current_balance = get_current_balance_for_key(cowl_cep18_contract_package_hash, &owner);
+    // let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
+    // let current_balance = get_current_balance_for_key(cowl_cep18_contract_package_hash, &owner);
+    // runtime::print(&format!(" current_balance {:?}", current_balance));
 
     // Ensure the cumulative transfer + requested transfer does not exceed vested amount
-    let vested_and_available =
-        status.vested_amount + current_balance.saturating_sub(cumulative_transferred);
+    let vested_and_available = status.vested_amount;
 
-    if vested_and_available >= cumulative_transferred + amount {
-        // Update the transferred amount in the dictionary (pseudo-code)
+    let new_transfered_amount = cumulative_transferred + requested_amount;
+
+    if vested_and_available >= new_transfered_amount {
         set_dictionary_value_for_key(
             DICT_TRANSFERRED_AMOUNT,
             &vesting_info.vesting_type.to_string(),
-            &(cumulative_transferred + amount),
+            &new_transfered_amount,
         );
-        let _ = update_vesting_status(vesting_info.vesting_type);
+        update_vesting_status(vesting_info.vesting_type);
         return true;
     }
-    let _ = update_vesting_status(vesting_info.vesting_type);
     false
 }
 
