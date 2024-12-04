@@ -2,13 +2,14 @@ use crate::enums::VestingType;
 #[cfg(feature = "contract-support")]
 use crate::{
     constants::{
-        DICT_ADDRESSES, DICT_START_TIME, DICT_VESTING_AMOUNT, DICT_VESTING_STATUS, MONTH_IN_SECONDS,
+        DICT_ADDRESSES, DICT_START_TIME, DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT,
+        DICT_VESTING_STATUS, MONTH_IN_SECONDS,
     },
     enums::{VESTING_INFO, VESTING_PERCENTAGES},
     error::VestingError,
     utils::{get_dictionary_value_from_key, set_dictionary_value_for_key},
 };
-use alloc::{boxed::Box, fmt, string::String, vec::Vec};
+use alloc::{fmt, vec::Vec};
 #[cfg(feature = "contract-support")]
 use alloc::{format, string::ToString};
 #[cfg(feature = "contract-support")]
@@ -28,7 +29,6 @@ use time::Duration;
 #[derive(Clone, Eq, PartialEq)]
 pub struct VestingInfo {
     pub vesting_type: VestingType,
-    pub vesting_address: &'static str,
     pub maybe_vesting_address_key: Option<Key>,
     pub vesting_duration: Option<Duration>,
 }
@@ -38,9 +38,8 @@ impl VestingInfo {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingInfo {{ vesting_type: {:?}, vesting_address: {:?}, maybe_vesting_address_key: {:?}, vesting_duration: {:?} }}",
+            "VestingInfo {{ vesting_type: {:?}, vesting_address_key: {:?}, vesting_duration: {:?} }}",
             self.vesting_type,
-            self.vesting_address,
             self.maybe_vesting_address_key,
             self.vesting_duration.map(|d| d.whole_seconds() as u64) // Displaying just seconds if duration is Some
         )
@@ -64,7 +63,6 @@ impl ToBytes for VestingInfo {
         let mut bytes = Vec::new();
 
         bytes.extend(self.vesting_type.to_bytes()?);
-        bytes.extend(self.vesting_address.to_bytes()?);
         bytes.extend(self.maybe_vesting_address_key.to_bytes()?);
 
         match self.vesting_duration {
@@ -77,7 +75,6 @@ impl ToBytes for VestingInfo {
 
     fn serialized_length(&self) -> usize {
         self.vesting_type.serialized_length()
-            + self.vesting_address.serialized_length()
             + self.maybe_vesting_address_key.serialized_length()
             + Option::<u64>::serialized_length(
                 &self.vesting_duration.map(|d| d.whole_seconds() as u64),
@@ -88,17 +85,14 @@ impl ToBytes for VestingInfo {
 impl FromBytes for VestingInfo {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
         let (vesting_type, rem) = VestingType::from_bytes(bytes)?;
-        let (vesting_address, rem) = String::from_bytes(rem)?;
         let (maybe_vesting_address_key, rem) = Option::<Key>::from_bytes(rem)?;
         let (vesting_duration_opt, rem) = Option::<u64>::from_bytes(rem)?;
 
         let vesting_duration = vesting_duration_opt.map(|seconds| Duration::new(seconds as i64, 0));
-        let vesting_address = Box::leak(vesting_address.into_boxed_str());
 
         Ok((
             VestingInfo {
                 vesting_type,
-                vesting_address,
                 maybe_vesting_address_key,
                 vesting_duration,
             },
@@ -115,14 +109,14 @@ impl CLTyped for VestingInfo {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct VestingAllocation {
-    pub vesting_address: String,
+    pub vesting_type: VestingType,
     pub vesting_address_key: Key,
     pub vesting_amount: U256,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct VestingStatus {
-    pub vesting_address: String,
+    pub vesting_type: VestingType,
     pub total_amount: U256,
     pub vested_amount: U256,
     pub is_fully_vested: bool,
@@ -143,8 +137,8 @@ impl VestingStatus {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingStatus {{ vesting_address: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, time_until_next_release: {:?}, monthly_release: {:?} }}",
-            self.vesting_address,
+            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, time_until_next_release: {:?}, monthly_release: {:?} }}",
+            self.vesting_type,
             self.total_amount,
             self.vested_amount,
             self.is_fully_vested,
@@ -184,7 +178,7 @@ where
 
 impl VestingStatus {
     fn new(
-        vesting_address: String,
+        vesting_type: VestingType,
         total_amount: U256,
         vested_amount: U256,
         is_fully_vested: bool,
@@ -193,7 +187,7 @@ impl VestingStatus {
         monthly_release: U256,
     ) -> Self {
         Self {
-            vesting_address,
+            vesting_type,
             total_amount,
             vested_amount,
             is_fully_vested,
@@ -215,7 +209,7 @@ impl ToBytes for VestingStatus {
         let mut bytes = Vec::new();
 
         // Serialize each field in the VestingStatus struct
-        bytes.extend(self.vesting_address.to_bytes()?);
+        bytes.extend(self.vesting_type.to_bytes()?);
         bytes.extend(self.total_amount.to_bytes()?);
         bytes.extend(self.vested_amount.to_bytes()?);
         bytes.extend(self.is_fully_vested.to_bytes()?);
@@ -227,7 +221,7 @@ impl ToBytes for VestingStatus {
     }
 
     fn serialized_length(&self) -> usize {
-        self.vesting_address.serialized_length()
+        self.vesting_type.serialized_length()
             + self.total_amount.serialized_length()
             + self.vested_amount.serialized_length()
             + self.is_fully_vested.serialized_length()
@@ -239,7 +233,7 @@ impl ToBytes for VestingStatus {
 
 impl FromBytes for VestingStatus {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), casper_types::bytesrepr::Error> {
-        let (vesting_address, bytes) = String::from_bytes(bytes)?;
+        let (vesting_type, bytes) = VestingType::from_bytes(bytes)?;
         let (total_amount, bytes) = U256::from_bytes(bytes)?;
         let (vested_amount, bytes) = U256::from_bytes(bytes)?;
         let (is_fully_vested, bytes) = bool::from_bytes(bytes)?;
@@ -252,7 +246,7 @@ impl FromBytes for VestingStatus {
 
         Ok((
             VestingStatus::new(
-                vesting_address,
+                vesting_type,
                 total_amount,
                 vested_amount,
                 is_fully_vested,
@@ -271,9 +265,11 @@ pub fn ret_vesting_status(vesting_type: VestingType) {
 
     set_dictionary_value_for_key(
         DICT_VESTING_STATUS,
-        &vesting_type.to_string(),
+        &vesting_status.vesting_type.to_string(),
         &vesting_status,
     );
+
+    runtime::print(&format!("{:?}", vesting_status));
 
     let result = CLValue::from_t(vesting_status).unwrap_or_revert();
     ret(result);
@@ -283,10 +279,8 @@ pub fn ret_vesting_status(vesting_type: VestingType) {
 pub fn ret_vesting_info(vesting_type: VestingType) {
     use crate::constants::DICT_VESTING_INFO;
 
-    let vesting_info = get_vesting_info_by_type(vesting_type)
+    let vesting_info = get_vesting_info_by_type(&vesting_type)
         .unwrap_or_revert_with(VestingError::InvalidVestingType);
-
-    runtime::print(&format!("{:?}", vesting_info));
 
     set_dictionary_value_for_key(DICT_VESTING_INFO, &vesting_type.to_string(), &vesting_info);
 
@@ -300,10 +294,9 @@ fn get_vesting_info() -> Vec<VestingInfo> {
         .iter()
         .map(|vesting_info| VestingInfo {
             vesting_type: vesting_info.vesting_type,
-            vesting_address: vesting_info.vesting_address,
             maybe_vesting_address_key: get_dictionary_value_from_key(
                 DICT_ADDRESSES,
-                vesting_info.vesting_address,
+                &vesting_info.vesting_type.to_string(),
             ),
             vesting_duration: vesting_info.vesting_duration,
         })
@@ -318,10 +311,10 @@ fn get_vesting_info_by_key(vesting_address_key: &Key) -> Option<VestingInfo> {
 }
 
 #[cfg(feature = "contract-support")]
-fn get_vesting_info_by_type(vesting_type: VestingType) -> Option<VestingInfo> {
+fn get_vesting_info_by_type(vesting_type: &VestingType) -> Option<VestingInfo> {
     get_vesting_info()
         .into_iter()
-        .find(|info| info.vesting_type == vesting_type)
+        .find(|info| info.vesting_type == *vesting_type)
 }
 
 #[cfg(feature = "contract-support")]
@@ -331,9 +324,10 @@ fn get_vesting_status(
     total_amount: U256,
     current_time: u64,
 ) -> VestingStatus {
-    let elapsed_time = current_time.saturating_sub(start_time);
+    // let elapsed_time = current_time.saturating_sub(start_time);
 
     // Handle linear vesting or immediate full vesting based on type
+    #[allow(clippy::match_single_binding)]
     let vested_amount = match vesting_info.vesting_type {
         // VestingType::Treasury => {
         //     // Treasury has an immediate unlock at the end of the lock duration
@@ -376,9 +370,8 @@ fn get_vesting_status(
         U256::zero()
     };
 
-    runtime::print(&format!("{:?}", monthly_release));
     VestingStatus::new(
-        vesting_info.vesting_address.to_string(),
+        vesting_info.vesting_type,
         total_amount,
         vested_amount,
         is_fully_vested,
@@ -396,11 +389,12 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
         .expect("Invalid vesting type");
 
     let maybe_vesting_address_key =
-        get_dictionary_value_from_key(DICT_ADDRESSES, vesting_info.vesting_address);
-    let start_time = get_dictionary_value_from_key(DICT_START_TIME, vesting_info.vesting_address)
-        .unwrap_or_default();
+        get_dictionary_value_from_key(DICT_ADDRESSES, &vesting_info.vesting_type.to_string());
+    let start_time =
+        get_dictionary_value_from_key(DICT_START_TIME, &vesting_info.vesting_type.to_string())
+            .unwrap_or_default();
     let total_amount =
-        get_dictionary_value_from_key(DICT_VESTING_AMOUNT, vesting_info.vesting_address)
+        get_dictionary_value_from_key(DICT_VESTING_AMOUNT, &vesting_info.vesting_type.to_string())
             .unwrap_or_default();
 
     let current_time: u64 = get_blocktime().into();
@@ -408,7 +402,6 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
     // Calculate the vesting status
     get_vesting_status(
         &VestingInfo {
-            vesting_address: vesting_info.vesting_address,
             vesting_type,
             vesting_duration: vesting_info.vesting_duration,
             maybe_vesting_address_key,
@@ -420,25 +413,41 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
 }
 
 #[cfg(feature = "contract-support")]
-pub fn check_vesting_transfer(sender: Key, amount: U256) -> bool {
-    // Retrieve vesting information for the sender address
+pub fn get_vesting_transfer(owner: Key, amount: U256) -> bool {
+    // Retrieve vesting information for the owner address
 
-    let vesting_info = match get_vesting_info_by_key(&sender) {
+    let vesting_info = match get_vesting_info_by_key(&owner) {
         Some(info) => info,
-        None => return true, // If sender is not a vesting address, allow transfer
+        None => return true, // If owner is not a vesting address, allow transfer
     };
 
-    let start_time = get_dictionary_value_from_key(DICT_START_TIME, vesting_info.vesting_address)
-        .unwrap_or_default();
+    let start_time =
+        get_dictionary_value_from_key(DICT_START_TIME, &vesting_info.vesting_type.to_string())
+            .unwrap_or_default();
     let total_amount =
-        get_dictionary_value_from_key(DICT_VESTING_AMOUNT, vesting_info.vesting_address)
+        get_dictionary_value_from_key(DICT_VESTING_AMOUNT, &vesting_info.vesting_type.to_string())
             .unwrap_or_default();
     let current_time: u64 = get_blocktime().into();
-    // Retrieve the vesting status for the sender
+    // Retrieve the vesting status for the owner
     let status = get_vesting_status(&vesting_info, start_time, total_amount, current_time);
 
-    // Allow transfer if the amount is within the vested amount
-    amount <= status.vested_amount
+    let cumulative_transferred: U256 = get_dictionary_value_from_key(
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_info.vesting_type.to_string(),
+    )
+    .unwrap_or_default();
+
+    // Ensure the cumulative transfer + requested transfer does not exceed vested amount
+    if cumulative_transferred + amount <= status.vested_amount {
+        // Update the transferred amount in the dictionary (pseudo-code)
+        set_dictionary_value_for_key(
+            DICT_TRANSFERRED_AMOUNT,
+            &vesting_info.vesting_type.to_string(),
+            &(cumulative_transferred + amount),
+        );
+        return true;
+    }
+    false
 }
 
 #[cfg(feature = "contract-support")]
@@ -505,14 +514,13 @@ pub fn calculate_vesting_allocations(initial_supply: U256) -> Vec<VestingAllocat
                 .iter()
                 .find(|info| info.vesting_type == *vesting_type)
                 .map(|info| {
-                    let vesting_address = info.vesting_address;
                     let vesting_address_key = info
                         .maybe_vesting_address_key
                         .unwrap_or_revert_with(VestingError::MissingKey);
-                    (vesting_address, vesting_address_key, percentage)
+                    (vesting_type, vesting_address_key, percentage)
                 })
         })
-        .map(|(vesting_address, vesting_address_key, percentage)| {
+        .map(|(vesting_type, vesting_address_key, percentage)| {
             let vesting_amount = initial_supply
                 .checked_mul(U256::from(*percentage))
                 .unwrap_or_revert_with(VestingError::Overflow)
@@ -521,7 +529,7 @@ pub fn calculate_vesting_allocations(initial_supply: U256) -> Vec<VestingAllocat
 
             // Create the VestingAllocation with the required fields
             VestingAllocation {
-                vesting_address: vesting_address.to_string(),
+                vesting_type: *vesting_type,
                 vesting_address_key,
                 vesting_amount,
             }

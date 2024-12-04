@@ -20,6 +20,9 @@ mod vesting_status;
 mod vesting_info;
 
 #[cfg(test)]
+mod filter;
+
+#[cfg(test)]
 mod tests {
     use cowl_vesting::enums::VESTING_PERCENTAGES;
     #[test]

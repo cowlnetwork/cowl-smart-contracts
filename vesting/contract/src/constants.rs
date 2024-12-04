@@ -6,15 +6,6 @@ pub const PREFIX_CONTRACT_NAME: &str = "vesting_contract_hash";
 pub const PREFIX_CONTRACT_VERSION: &str = "vesting_contract_version";
 pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "vesting_contract_package_hash";
 
-pub const ADDRESS_TREASURY: &str = "address_treasury";
-pub const ADDRESS_CONTRIBUTOR: &str = "address_contributor";
-pub const ADDRESS_DEVELOPMENT: &str = "address_development";
-pub const ADDRESS_LIQUIDITY: &str = "address_liquidity";
-pub const ADDRESS_COMMUNITY: &str = "address_community";
-
-pub const ADDRESS_STACKING: &str = "address_staking";
-pub const TOTAL_SUPPLY: &str = "total_supply";
-
 pub const ENTRY_POINT_INSTALL: &str = "install";
 pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
 pub const ENTRY_POINT_VESTING_STATUS: &str = "vesting_status";
@@ -48,8 +39,7 @@ pub const ARG_RECIPIENT: &str = "recipient";
 pub const ARG_ENABLE_MINT_BURN: &str = "enable_mint_burn";
 pub const ARG_TRANSFER_FILTER_CONTRACT_PACKAGE: &str = "transfer_filter_contract_package";
 pub const ARG_TRANSFER_FILTER_METHOD: &str = "transfer_filter_method";
-
-pub const ARG_FILTER_CONTRACT_RETURN_VALUE: &str = "return_value";
+pub const ARG_TOTAL_SUPPLY: &str = "total_supply";
 
 pub const DICT_SECURITY_BADGES: &str = "security_badges";
 pub const DICT_ADDRESSES: &str = "addresses";
@@ -57,6 +47,7 @@ pub const DICT_START_TIME: &str = "start_time";
 pub const DICT_VESTING_AMOUNT: &str = "vesting_amount";
 pub const DICT_VESTING_INFO: &str = "vesting_info";
 pub const DICT_VESTING_STATUS: &str = "vesting_status";
+pub const DICT_TRANSFERRED_AMOUNT: &str = "transfered_amount";
 
 pub const ADMIN_LIST: &str = "admin_list";
 pub const MINTER_LIST: &str = "minter_list";

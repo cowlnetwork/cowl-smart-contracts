@@ -1,9 +1,7 @@
 use crate::{
     constants::{
-        ADDRESS_COMMUNITY, ADDRESS_CONTRIBUTOR, ADDRESS_DEVELOPMENT, ADDRESS_LIQUIDITY,
-        ADDRESS_STACKING, ADDRESS_TREASURY, DURATION_COMMUNITY_VESTING,
-        DURATION_CONTRIBUTOR_VESTING, DURATION_DEVELOPMENT_VESTING, DURATION_LIQUIDITY_VESTING,
-        DURATION_STAKING_VESTING, DURATION_TREASURY_VESTING,
+        DURATION_COMMUNITY_VESTING, DURATION_CONTRIBUTOR_VESTING, DURATION_DEVELOPMENT_VESTING,
+        DURATION_LIQUIDITY_VESTING, DURATION_STAKING_VESTING, DURATION_TREASURY_VESTING,
     },
     error::VestingError,
     vesting::VestingInfo,
@@ -13,6 +11,7 @@ use casper_types::{
     bytesrepr::{Error, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
     CLType, CLTyped,
 };
+use serde::{Deserialize, Serialize};
 use time::Duration;
 
 #[repr(u8)]
@@ -37,7 +36,7 @@ impl TryFrom<u8> for EventsMode {
 
 #[repr(C)]
 #[non_exhaustive]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug, Copy)]
 pub enum VestingType {
     Treasury = 0,
     Contributor = 1,
@@ -125,37 +124,31 @@ impl fmt::Display for VestingType {
 pub const VESTING_INFO: &[VestingInfo] = &[
     VestingInfo {
         vesting_type: VestingType::Treasury,
-        vesting_address: ADDRESS_TREASURY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_TREASURY_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Contributor,
-        vesting_address: ADDRESS_CONTRIBUTOR,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_CONTRIBUTOR_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Development,
-        vesting_address: ADDRESS_DEVELOPMENT,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_DEVELOPMENT_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Liquidity,
-        vesting_address: ADDRESS_LIQUIDITY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_LIQUIDITY_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Community,
-        vesting_address: ADDRESS_COMMUNITY,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_COMMUNITY_VESTING,
     },
     VestingInfo {
         vesting_type: VestingType::Staking,
-        vesting_address: ADDRESS_STACKING,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_STAKING_VESTING,
     },

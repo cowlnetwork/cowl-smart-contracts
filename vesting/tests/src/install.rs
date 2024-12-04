@@ -1,10 +1,6 @@
 use crate::utility::{
-    constants::{
-        ACCOUNT_COMMUNITY, ACCOUNT_CONTRIBUTOR, ACCOUNT_DEVELOPMENT, ACCOUNT_LIQUIDITY,
-        ACCOUNT_STACKING, ACCOUNT_TREASURY,
-    },
     installer_request_builders::{setup, TestContext},
-    support::get_dictionary_value_from_key,
+    support::{get_account_for_vesting, get_dictionary_value_from_key},
 };
 use casper_types::{Key, U256};
 use cowl_vesting::{
@@ -14,7 +10,7 @@ use cowl_vesting::{
         ARG_TRANSFER_FILTER_METHOD, COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES,
         DICT_SECURITY_BADGES, DICT_START_TIME, DICT_VESTING_AMOUNT,
     },
-    enums::{VestingType, VESTING_INFO},
+    enums::VESTING_INFO,
 };
 
 #[test]
@@ -83,23 +79,15 @@ fn should_install_contract() {
             &builder,
             &Key::from(cowl_vesting_contract_hash),
             DICT_ADDRESSES,
-            vesting_info.vesting_address,
+            &vesting_info.vesting_type.to_string(),
         )
         .as_account()
         .unwrap();
 
-        let expected_account = match vesting_info.vesting_type {
-            VestingType::Liquidity => &ACCOUNT_LIQUIDITY,
-            VestingType::Contributor => &ACCOUNT_CONTRIBUTOR,
-            VestingType::Development => &ACCOUNT_DEVELOPMENT,
-            VestingType::Treasury => &ACCOUNT_TREASURY,
-            VestingType::Community => &ACCOUNT_COMMUNITY,
-            VestingType::Staking => &ACCOUNT_STACKING,
-            _ => unimplemented!(),
-        };
+        let expected_account = get_account_for_vesting(vesting_info.vesting_type);
 
         // Retrieve the expected address from the test_accounts map
-        let expected_address = *test_accounts.get(expected_account).unwrap();
+        let expected_address = *test_accounts.get(&expected_account).unwrap();
 
         // Assert that the actual address matches the expected address
         assert_eq!(
@@ -116,7 +104,7 @@ fn should_install_contract() {
                 &builder,
                 &Key::from(cowl_vesting_contract_hash),
                 DICT_VESTING_AMOUNT,
-                vesting_info.vesting_address,
+                &vesting_info.vesting_type.to_string(),
             );
 
             // Perform the check for the start time as well
@@ -124,7 +112,7 @@ fn should_install_contract() {
                 &builder,
                 &Key::from(cowl_vesting_contract_hash),
                 DICT_START_TIME,
-                vesting_info.vesting_address,
+                &vesting_info.vesting_type.to_string(),
             );
 
             // Assert the start time for the current vesting info

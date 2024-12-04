@@ -7,7 +7,7 @@ use crate::utility::{
     support::create_funded_dummy_account,
 };
 use casper_engine_test_support::{
-    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_ADDR,
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, ARG_AMOUNT, DEFAULT_ACCOUNT_ADDR,
     PRODUCTION_RUN_GENESIS_REQUEST,
 };
 use casper_types::{
@@ -15,11 +15,10 @@ use casper_types::{
 };
 use cowl_vesting::{
     constants::{
-        ADDRESS_COMMUNITY, ADDRESS_CONTRIBUTOR, ADDRESS_DEVELOPMENT, ADDRESS_LIQUIDITY,
-        ADDRESS_STACKING, ADDRESS_TREASURY, ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE,
-        ARG_ENABLE_MINT_BURN, ARG_EVENTS_MODE, ARG_NAME, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
-        ARG_TRANSFER_FILTER_METHOD, ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY,
-        ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_VESTING_INFO,
+        ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_ENABLE_MINT_BURN, ARG_EVENTS_MODE,
+        ARG_NAME, ARG_RECIPIENT, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD,
+        ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER,
+        ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_TRANSFER, ENTRY_POINT_VESTING_INFO,
         ENTRY_POINT_VESTING_STATUS, NONE_LIST,
     },
     enums::{EventsMode, VestingType},
@@ -116,12 +115,12 @@ pub fn setup_with_args(
     );
 
     let accounts = vec![
-        (ADDRESS_LIQUIDITY, ACCOUNT_LIQUIDITY),
-        (ADDRESS_CONTRIBUTOR, ACCOUNT_CONTRIBUTOR),
-        (ADDRESS_DEVELOPMENT, ACCOUNT_DEVELOPMENT),
-        (ADDRESS_TREASURY, ACCOUNT_TREASURY),
-        (ADDRESS_COMMUNITY, ACCOUNT_COMMUNITY),
-        (ADDRESS_STACKING, ACCOUNT_STACKING),
+        (VestingType::Liquidity.to_string(), ACCOUNT_LIQUIDITY),
+        (VestingType::Contributor.to_string(), ACCOUNT_CONTRIBUTOR),
+        (VestingType::Development.to_string(), ACCOUNT_DEVELOPMENT),
+        (VestingType::Treasury.to_string(), ACCOUNT_TREASURY),
+        (VestingType::Community.to_string(), ACCOUNT_COMMUNITY),
+        (VestingType::Staking.to_string(), ACCOUNT_STACKING),
     ];
 
     // Iterate over the accounts and insert into install_args
@@ -266,6 +265,33 @@ pub fn cowl_vesting_vesting_info<'a>(
     )
     .build();
     builder.exec(vesting_info_request)
+}
+
+pub fn cowl_cep18_token_transfer<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    cowl_cep18_token_contract_hash: &'a ContractHash,
+    sender: &AccountHash,
+    transfer_amount: U256,
+    recipient: &AccountHash,
+    block_time: Option<u64>,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let args = runtime_args! {
+        ARG_RECIPIENT => Key::Account(*recipient),
+        ARG_AMOUNT => transfer_amount,
+    };
+
+    let mut token_transfer_request = ExecuteRequestBuilder::contract_call_by_hash(
+        *sender,
+        *cowl_cep18_token_contract_hash,
+        ENTRY_POINT_TRANSFER,
+        args,
+    );
+
+    if let Some(block_time) = block_time {
+        token_transfer_request = token_transfer_request.with_block_time(block_time)
+    }
+
+    builder.exec(token_transfer_request.build())
 }
 
 pub struct SecurityLists {

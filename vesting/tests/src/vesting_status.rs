@@ -44,7 +44,7 @@ fn should_get_vesting_treasury_status() {
     );
     assert!(!vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_treasury");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_TREASURY_VESTING.unwrap()
@@ -84,7 +84,7 @@ fn should_get_vesting_contributor_status() {
     );
     assert!(!vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_contributor");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_CONTRIBUTOR_VESTING.unwrap()
@@ -124,7 +124,7 @@ fn should_get_vesting_development_status() {
     );
     assert!(!vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_development");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_DEVELOPMENT_VESTING.unwrap()
@@ -165,7 +165,7 @@ fn should_get_vesting_liquidity_status() {
 
     assert!(vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_liquidity");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(vesting_status.vesting_duration, Duration::ZERO);
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
     assert_eq!(vesting_status.monthly_release, U256::zero());
@@ -203,7 +203,7 @@ fn should_get_vesting_community_status() {
 
     assert!(!vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_community");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_COMMUNITY_VESTING.unwrap()
@@ -243,7 +243,7 @@ fn should_get_vesting_staking_status() {
     );
     assert!(vesting_status.is_fully_vested);
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_staking");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(vesting_status.vesting_duration, Duration::ZERO);
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
     assert_eq!(vesting_status.monthly_release, U256::zero());
@@ -283,7 +283,7 @@ fn should_get_vesting_contributor_status_half_year() {
 
     assert!(!vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_contributor");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_CONTRIBUTOR_VESTING.unwrap()
@@ -324,7 +324,7 @@ fn should_get_vesting_contributor_status_one_and_half_year() {
 
     assert!(vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_contributor");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_CONTRIBUTOR_VESTING.unwrap()
@@ -367,7 +367,7 @@ fn should_get_vesting_development_status_half_year() {
 
     assert!(!vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_development");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_DEVELOPMENT_VESTING.unwrap()
@@ -408,7 +408,7 @@ fn should_get_vesting_development_status_one_and_half_year() {
 
     assert!(vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_development");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_DEVELOPMENT_VESTING.unwrap()
@@ -451,7 +451,7 @@ fn should_get_vesting_treasury_status_two_year() {
 
     assert!(!vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_treasury");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_TREASURY_VESTING.unwrap()
@@ -492,7 +492,7 @@ fn should_get_vesting_treasury_status_six_year() {
 
     assert!(vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_treasury");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_TREASURY_VESTING.unwrap()
@@ -535,7 +535,7 @@ fn should_get_vesting_community_status_two_year() {
 
     assert!(!vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_community");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_COMMUNITY_VESTING.unwrap()
@@ -576,7 +576,7 @@ fn should_get_vesting_community_status_six_year() {
 
     assert!(vesting_status.is_fully_vested);
     assert!(vesting_status.vested_amount > U256::zero());
-    assert_eq!(vesting_status.vesting_address, "address_community");
+    assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
         DURATION_COMMUNITY_VESTING.unwrap()

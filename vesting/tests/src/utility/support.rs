@@ -1,3 +1,7 @@
+use super::constants::{
+    ACCOUNT_COMMUNITY, ACCOUNT_CONTRIBUTOR, ACCOUNT_DEVELOPMENT, ACCOUNT_LIQUIDITY,
+    ACCOUNT_STACKING, ACCOUNT_TREASURY,
+};
 use casper_engine_test_support::{
     ExecuteRequestBuilder, WasmTestBuilder, DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
@@ -16,6 +20,7 @@ use casper_types::{
     },
     ApiError, CLTyped, Key, PublicKey, RuntimeArgs, SecretKey,
 };
+use cowl_vesting::enums::VestingType;
 use std::fmt::Debug;
 
 pub fn assert_expected_error(actual_error: EngineStateError, error_code: u16, reason: &str) {
@@ -99,4 +104,16 @@ pub fn fund_account(builder: &mut WasmTestBuilder<InMemoryGlobalState>, account:
     )
     .build();
     builder.exec(transfer).expect_success().commit();
+}
+
+pub fn get_account_for_vesting(vesting_type: VestingType) -> [u8; 32] {
+    match vesting_type {
+        VestingType::Liquidity => ACCOUNT_LIQUIDITY,
+        VestingType::Contributor => ACCOUNT_CONTRIBUTOR,
+        VestingType::Development => ACCOUNT_DEVELOPMENT,
+        VestingType::Treasury => ACCOUNT_TREASURY,
+        VestingType::Community => ACCOUNT_COMMUNITY,
+        VestingType::Staking => ACCOUNT_STACKING,
+        _ => unimplemented!(),
+    }
 }
