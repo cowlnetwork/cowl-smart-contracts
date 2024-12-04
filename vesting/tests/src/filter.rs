@@ -236,3 +236,137 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one() {
     );
     dbg!(vesting_status);
 }
+
+#[test]
+fn should_allow_half_transfer_for_non_vesting_address_at_half_time() {
+    let (
+        mut builder,
+        TestContext {
+            cowl_vesting_contract_hash,
+            cowl_cep18_token_contract_hash,
+            ref test_accounts,
+            ..
+        },
+    ) = setup();
+
+    let vesting_type = VestingType::Contributor;
+
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let account_user_1 = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
+    let sender = *test_accounts
+        .get(&get_account_for_vesting(vesting_type))
+        .unwrap();
+
+    let transfer_amount = vesting_status.total_amount / 2;
+    let test_duration = DURATION_CONTRIBUTOR_VESTING.map(|d| (d.whole_seconds() / 2) as u64);
+
+    cowl_cep18_token_transfer(
+        &mut builder,
+        &cowl_cep18_token_contract_hash,
+        &sender,
+        transfer_amount,
+        &account_user_1,
+        test_duration,
+    )
+    .expect_success()
+    .commit();
+
+    let actual_transfered_amount: U256 = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_type.to_string(),
+    );
+    assert_eq!(actual_transfered_amount, transfer_amount);
+
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    assert!(vesting_status.vested_amount > U256::zero());
+    assert_eq!(vesting_status.released_amount, transfer_amount);
+    assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+    assert_eq!(vesting_status.vesting_type, vesting_type);
+    assert_eq!(
+        vesting_status.vesting_duration,
+        DURATION_CONTRIBUTOR_VESTING.unwrap()
+    );
+    dbg!(vesting_status);
+}
+
+#[test]
+fn should_allow_full_transfer_for_non_vesting_address_at_full_time() {
+    let (
+        mut builder,
+        TestContext {
+            cowl_vesting_contract_hash,
+            cowl_cep18_token_contract_hash,
+            ref test_accounts,
+            ..
+        },
+    ) = setup();
+
+    let vesting_type = VestingType::Contributor;
+
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let account_user_1 = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
+    let sender = *test_accounts
+        .get(&get_account_for_vesting(vesting_type))
+        .unwrap();
+
+    let transfer_amount = vesting_status.total_amount;
+    let test_duration = DURATION_CONTRIBUTOR_VESTING.map(|d| (d.whole_seconds()) as u64);
+
+    cowl_cep18_token_transfer(
+        &mut builder,
+        &cowl_cep18_token_contract_hash,
+        &sender,
+        transfer_amount,
+        &account_user_1,
+        test_duration,
+    )
+    .expect_success()
+    .commit();
+
+    let actual_transfered_amount: U256 = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_type.to_string(),
+    );
+    assert_eq!(actual_transfered_amount, transfer_amount);
+
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    assert!(vesting_status.vested_amount > U256::zero());
+    assert_eq!(vesting_status.released_amount, transfer_amount);
+    assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+    assert_eq!(vesting_status.vesting_type, vesting_type);
+    assert_eq!(vesting_status.total_amount, vesting_status.vested_amount);
+    assert!(vesting_status.is_fully_vested);
+    assert_eq!(
+        vesting_status.vesting_duration,
+        DURATION_CONTRIBUTOR_VESTING.unwrap()
+    );
+    dbg!(vesting_status);
+}
