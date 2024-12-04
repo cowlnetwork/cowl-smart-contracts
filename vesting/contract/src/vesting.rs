@@ -486,11 +486,16 @@ pub fn get_vesting_transfer(owner: Key, requested_amount: U256) -> bool {
     // runtime::print(&format!(" current_balance {:?}", current_balance));
 
     // Ensure the cumulative transfer + requested transfer does not exceed vested amount
-    let vested_and_available = status.vested_amount;
-
     let new_transfered_amount = cumulative_transferred + requested_amount;
 
-    if vested_and_available >= new_transfered_amount {
+    // runtime::print(&format!("status {:?}", status));
+    // runtime::print(&format!("status.vested_amount {:?}", status.vested_amount));
+    // runtime::print(&format!(
+    //     "new_transfered_amount {:?}",
+    //     new_transfered_amount
+    // ));
+
+    if status.vesting_duration > Duration::ZERO && (status.vested_amount >= new_transfered_amount) {
         set_dictionary_value_for_key(
             DICT_TRANSFERRED_AMOUNT,
             &vesting_info.vesting_type.to_string(),
@@ -499,7 +504,7 @@ pub fn get_vesting_transfer(owner: Key, requested_amount: U256) -> bool {
         update_vesting_status(vesting_info.vesting_type);
         return true;
     }
-    false
+    status.is_fully_vested
 }
 
 #[cfg(feature = "contract-support")]

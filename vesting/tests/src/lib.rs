@@ -20,7 +20,13 @@ mod vesting_status;
 mod vesting_info;
 
 #[cfg(test)]
-mod filter;
+mod filter_contributor;
+
+#[cfg(test)]
+mod filter_community;
+
+#[cfg(test)]
+mod filter_liquidity;
 
 #[cfg(test)]
 mod tests {
