@@ -8,9 +8,10 @@ use cowl_vesting::{
         ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
         ARG_NAME, ARG_PACKAGE_HASH, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
         ARG_TRANSFER_FILTER_METHOD, COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES,
-        DICT_SECURITY_BADGES, DICT_START_TIME, DICT_VESTING_AMOUNT,
+        DICT_SECURITY_BADGES, DICT_START_TIME, DICT_VESTING_AMOUNT, DICT_VESTING_STATUS,
     },
     enums::VESTING_INFO,
+    vesting::VestingStatus,
 };
 
 #[test]
@@ -95,6 +96,16 @@ fn should_install_contract() {
             "Mismatch for {:?}",
             vesting_info.vesting_type
         );
+
+        let vesting_status: VestingStatus = get_dictionary_value_from_key(
+            &builder,
+            &Key::from(cowl_vesting_contract_hash),
+            DICT_VESTING_STATUS,
+            &vesting_info.vesting_type.to_string().to_owned(),
+        );
+        assert_eq!(vesting_status.vesting_type, vesting_info.vesting_type);
+
+        dbg!(vesting_status);
     }
 
     let total_vested_amount: U256 = VESTING_INFO

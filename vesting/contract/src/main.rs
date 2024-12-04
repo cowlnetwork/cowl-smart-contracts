@@ -25,17 +25,16 @@ use casper_types::{
 };
 use cowl_vesting::{
     constants::{
-        ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE,
-        ARG_DATA, ARG_EVENTS_MODE, ARG_FROM, ARG_INSTALLER, ARG_NAME, ARG_OPERATOR, ARG_OWNER,
+        ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_DATA,
+        ARG_EVENTS_MODE, ARG_FROM, ARG_INSTALLER, ARG_NAME, ARG_OPERATOR, ARG_OWNER,
         ARG_PACKAGE_HASH, ARG_RECIPIENT, ARG_TO, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
         ARG_TRANSFER_FILTER_METHOD, ARG_UPGRADE_FLAG, ARG_VESTING_TYPE,
         COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES, DICT_SECURITY_BADGES, DICT_START_TIME,
         DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT, DICT_VESTING_INFO, DICT_VESTING_STATUS,
-        ENTRY_POINT_BALANCE_OF, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER,
-        ENTRY_POINT_INSTALL, ENTRY_POINT_MINT, ENTRY_POINT_SET_TRANSFER_FILTER,
-        ENTRY_POINT_TOTAL_SUPPLY, ENTRY_POINT_TRANSFER, ENTRY_POINT_UPGRADE, MINTER_LIST,
-        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
-        PREFIX_CONTRACT_VERSION,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_INSTALL,
+        ENTRY_POINT_MINT, ENTRY_POINT_SET_TRANSFER_FILTER, ENTRY_POINT_TOTAL_SUPPLY,
+        ENTRY_POINT_TRANSFER, ENTRY_POINT_UPGRADE, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME,
+        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
@@ -51,7 +50,8 @@ use cowl_vesting::{
         get_verified_caller, set_dictionary_value_for_key,
     },
     vesting::{
-        calculate_vesting_allocations, get_vesting_transfer, ret_vesting_info, ret_vesting_status,
+        calculate_vesting_allocations, get_current_balance_for_key, get_vesting_transfer,
+        ret_vesting_info, ret_vesting_status, update_vesting_status,
     },
 };
 
@@ -448,13 +448,13 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
         );
     }
 
-    let contract_package_hash = get_cowl_cep18_contract_package_hash();
+    let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
 
     let total_supply = U256::from(COWL_CEP_18_TOKEN_TOTAL_SUPPLY);
 
     // Mint total supply
     call_versioned_contract::<()>(
-        contract_package_hash,
+        cowl_cep18_contract_package_hash,
         None,
         ENTRY_POINT_MINT,
         runtime_args! {
@@ -469,7 +469,7 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
     for allocation in allocations {
         if allocation.vesting_amount > U256::zero() {
             call_versioned_contract::<()>(
-                contract_package_hash,
+                cowl_cep18_contract_package_hash,
                 None,
                 ENTRY_POINT_TRANSFER,
                 runtime_args! {
@@ -479,21 +479,19 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
             );
         }
 
-        let recepient_balance: U256 = call_versioned_contract(
-            contract_package_hash,
-            None,
-            ENTRY_POINT_BALANCE_OF,
-            runtime_args! {ARG_ADDRESS => allocation.vesting_address_key },
+        let recipient_balance: U256 = get_current_balance_for_key(
+            cowl_cep18_contract_package_hash,
+            &allocation.vesting_address_key,
         );
 
-        if recepient_balance != allocation.vesting_amount {
+        if recipient_balance != allocation.vesting_amount {
             revert(VestingError::InvalidRecepientAllocation);
         }
 
         set_dictionary_value_for_key(
             DICT_VESTING_AMOUNT,
             &allocation.vesting_type.to_string(),
-            &recepient_balance,
+            &recipient_balance,
         );
         let start_time: u64 = runtime::get_blocktime().into();
         set_dictionary_value_for_key(
@@ -501,10 +499,12 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
             &allocation.vesting_type.to_string(),
             &start_time,
         );
+
+        let _ = update_vesting_status(allocation.vesting_type);
     }
 
     let actual_supply: U256 = call_versioned_contract(
-        contract_package_hash,
+        cowl_cep18_contract_package_hash,
         None,
         ENTRY_POINT_TOTAL_SUPPLY,
         runtime_args! {},
@@ -514,12 +514,8 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
         revert(VestingError::InvalidInstallerTotalSupply);
     }
 
-    let vesting_contract_balance: U256 = call_versioned_contract(
-        contract_package_hash,
-        None,
-        ENTRY_POINT_BALANCE_OF,
-        runtime_args! {ARG_ADDRESS => vesting_contract_hash_key },
-    );
+    let vesting_contract_balance: U256 =
+        get_current_balance_for_key(cowl_cep18_contract_package_hash, vesting_contract_hash_key);
 
     // //! Vesting contract should not have remaining funds after installation
     if vesting_contract_balance != U256::zero() {

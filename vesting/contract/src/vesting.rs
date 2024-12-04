@@ -2,27 +2,30 @@ use crate::enums::VestingType;
 #[cfg(feature = "contract-support")]
 use crate::{
     constants::{
-        DICT_ADDRESSES, DICT_START_TIME, DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT,
-        DICT_VESTING_STATUS, MONTH_IN_SECONDS,
+        ARG_ADDRESS, DICT_ADDRESSES, DICT_START_TIME, DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT,
+        DICT_VESTING_INFO, DICT_VESTING_STATUS, ENTRY_POINT_BALANCE_OF, MONTH_IN_SECONDS,
     },
     enums::{VESTING_INFO, VESTING_PERCENTAGES},
     error::VestingError,
-    utils::{get_dictionary_value_from_key, set_dictionary_value_for_key},
+    utils::{
+        get_cowl_cep18_contract_package_hash, get_dictionary_value_from_key,
+        set_dictionary_value_for_key,
+    },
 };
+#[cfg(feature = "contract-support")]
+use alloc::string::ToString;
 use alloc::{fmt, vec::Vec};
 #[cfg(feature = "contract-support")]
-use alloc::{format, string::ToString};
-#[cfg(feature = "contract-support")]
 use casper_contract::{
-    contract_api::runtime::{self, get_blocktime, ret},
+    contract_api::runtime::{call_versioned_contract, get_blocktime, ret},
     unwrap_or_revert::UnwrapOrRevert,
 };
-#[cfg(feature = "contract-support")]
-use casper_types::CLValue;
 use casper_types::{
     bytesrepr::{Bytes, Error, FromBytes, ToBytes},
     CLType, CLTyped, Key, U256,
 };
+#[cfg(feature = "contract-support")]
+use casper_types::{runtime_args, CLValue, ContractPackageHash, RuntimeArgs};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use time::Duration;
 
@@ -114,7 +117,7 @@ pub struct VestingAllocation {
     pub vesting_amount: U256,
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Copy)]
 pub struct VestingStatus {
     pub vesting_type: VestingType,
     pub total_amount: U256,
@@ -129,22 +132,32 @@ pub struct VestingStatus {
         serialize_with = "serialize_duration",
         deserialize_with = "deserialize_duration"
     )]
+    pub start_time: Duration,
+    #[serde(
+        serialize_with = "serialize_duration",
+        deserialize_with = "deserialize_duration"
+    )]
     pub time_until_next_release: Duration,
-    pub monthly_release: U256,
+    pub monthly_release_amount: U256,
+    pub released_amount: U256,
+    pub available_for_release_amount: U256,
 }
 
 impl VestingStatus {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, time_until_next_release: {:?}, monthly_release: {:?} }}",
+            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, start_time: {:?}, time_until_next_release: {:?}, monthly_release_amount: {:?}, released_amount: {:?}, available_for_release_amount: {:?} }}",
             self.vesting_type,
             self.total_amount,
             self.vested_amount,
             self.is_fully_vested,
             self.vesting_duration.whole_seconds(),  // Displaying seconds for duration
+            self.start_time.whole_seconds(),  // Displaying seconds for duration
             self.time_until_next_release.whole_seconds(),  // Displaying seconds for duration
-            self.monthly_release
+            self.monthly_release_amount,
+            self.released_amount,
+            self.available_for_release_amount
         )
     }
 }
@@ -183,8 +196,11 @@ impl VestingStatus {
         vested_amount: U256,
         is_fully_vested: bool,
         vesting_duration: Duration,
+        start_time: Duration,
         time_until_next: Duration,
-        monthly_release: U256,
+        monthly_release_amount: U256,
+        released_amount: U256,
+        available_for_release_amount: U256,
     ) -> Self {
         Self {
             vesting_type,
@@ -192,8 +208,11 @@ impl VestingStatus {
             vested_amount,
             is_fully_vested,
             vesting_duration,
+            start_time,
             time_until_next_release: time_until_next,
-            monthly_release,
+            monthly_release_amount,
+            released_amount,
+            available_for_release_amount,
         }
     }
 }
@@ -214,9 +233,11 @@ impl ToBytes for VestingStatus {
         bytes.extend(self.vested_amount.to_bytes()?);
         bytes.extend(self.is_fully_vested.to_bytes()?);
         bytes.extend((self.vesting_duration.whole_seconds() as u64).to_bytes()?);
+        bytes.extend((self.start_time.whole_seconds() as u64).to_bytes()?);
         bytes.extend((self.time_until_next_release.whole_seconds() as u64).to_bytes()?);
-        bytes.extend(self.monthly_release.to_bytes()?);
-
+        bytes.extend(self.monthly_release_amount.to_bytes()?);
+        bytes.extend(self.released_amount.to_bytes()?);
+        bytes.extend(self.available_for_release_amount.to_bytes()?);
         Ok(bytes)
     }
 
@@ -226,8 +247,11 @@ impl ToBytes for VestingStatus {
             + self.vested_amount.serialized_length()
             + self.is_fully_vested.serialized_length()
             + (self.vesting_duration.whole_seconds() as u64).serialized_length()
+            + (self.start_time.whole_seconds() as u64).serialized_length()
             + (self.time_until_next_release.whole_seconds() as u64).serialized_length()
-            + self.monthly_release.serialized_length()
+            + self.monthly_release_amount.serialized_length()
+            + self.released_amount.serialized_length()
+            + self.available_for_release_amount.serialized_length()
     }
 }
 
@@ -238,10 +262,14 @@ impl FromBytes for VestingStatus {
         let (vested_amount, bytes) = U256::from_bytes(bytes)?;
         let (is_fully_vested, bytes) = bool::from_bytes(bytes)?;
         let (vesting_duration_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
+        let (start_time_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
         let (time_until_next_release_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
-        let (monthly_release, bytes) = U256::from_bytes(bytes)?;
+        let (monthly_release_amount, bytes) = U256::from_bytes(bytes)?;
+        let (released_amount, bytes) = U256::from_bytes(bytes)?;
+        let (available_for_release_amount, bytes) = U256::from_bytes(bytes)?;
 
         let vesting_duration = Duration::new(vesting_duration_ms as i64, 0);
+        let start_time = Duration::new(start_time_ms as i64, 0);
         let time_until_next_release = Duration::new(time_until_next_release_ms as i64, 0);
 
         Ok((
@@ -251,8 +279,11 @@ impl FromBytes for VestingStatus {
                 vested_amount,
                 is_fully_vested,
                 vesting_duration,
+                start_time,
                 time_until_next_release,
-                monthly_release,
+                monthly_release_amount,
+                released_amount,
+                available_for_release_amount,
             ),
             bytes,
         ))
@@ -261,6 +292,16 @@ impl FromBytes for VestingStatus {
 
 #[cfg(feature = "contract-support")]
 pub fn ret_vesting_status(vesting_type: VestingType) {
+    let vesting_status = update_vesting_status(vesting_type);
+
+    // runtime::print(&format!("{:?}", vesting_status));
+
+    let result = CLValue::from_t(vesting_status).unwrap_or_revert();
+    ret(result);
+}
+
+#[cfg(feature = "contract-support")]
+pub fn update_vesting_status(vesting_type: VestingType) -> VestingStatus {
     let vesting_status = get_vesting_status_by_type(vesting_type);
 
     set_dictionary_value_for_key(
@@ -268,17 +309,11 @@ pub fn ret_vesting_status(vesting_type: VestingType) {
         &vesting_status.vesting_type.to_string(),
         &vesting_status,
     );
-
-    runtime::print(&format!("{:?}", vesting_status));
-
-    let result = CLValue::from_t(vesting_status).unwrap_or_revert();
-    ret(result);
+    vesting_status
 }
 
 #[cfg(feature = "contract-support")]
 pub fn ret_vesting_info(vesting_type: VestingType) {
-    use crate::constants::DICT_VESTING_INFO;
-
     let vesting_info = get_vesting_info_by_type(&vesting_type)
         .unwrap_or_revert_with(VestingError::InvalidVestingType);
 
@@ -327,6 +362,7 @@ fn get_vesting_status(
     // let elapsed_time = current_time.saturating_sub(start_time);
 
     // Handle linear vesting or immediate full vesting based on type
+
     #[allow(clippy::match_single_binding)]
     let vested_amount = match vesting_info.vesting_type {
         // VestingType::Treasury => {
@@ -360,7 +396,7 @@ fn get_vesting_status(
         Duration::ZERO
     };
 
-    let monthly_release = if let Some(duration) = vesting_info.vesting_duration {
+    let monthly_release_amout = if let Some(duration) = vesting_info.vesting_duration {
         if !is_fully_vested {
             calculate_monthly_release(total_amount, duration)
         } else {
@@ -370,14 +406,25 @@ fn get_vesting_status(
         U256::zero()
     };
 
+    let released_amount = get_dictionary_value_from_key(
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_info.vesting_type.to_string(),
+    )
+    .unwrap_or_default();
+
+    let available_for_release_amount = vested_amount.saturating_sub(released_amount);
+
     VestingStatus::new(
         vesting_info.vesting_type,
         total_amount,
         vested_amount,
         is_fully_vested,
         vesting_info.vesting_duration.unwrap_or(Duration::ZERO),
+        Duration::new(start_time as i64, 0),
         time_until_next_release,
-        monthly_release,
+        monthly_release_amout,
+        released_amount,
+        available_for_release_amount,
     )
 }
 
@@ -437,17 +484,38 @@ pub fn get_vesting_transfer(owner: Key, amount: U256) -> bool {
     )
     .unwrap_or_default();
 
+    let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
+    let current_balance = get_current_balance_for_key(cowl_cep18_contract_package_hash, &owner);
+
     // Ensure the cumulative transfer + requested transfer does not exceed vested amount
-    if status.vested_amount.is_zero() || cumulative_transferred + amount <= status.vested_amount {
+    let vested_and_available =
+        status.vested_amount + current_balance.saturating_sub(cumulative_transferred);
+
+    if vested_and_available >= cumulative_transferred + amount {
         // Update the transferred amount in the dictionary (pseudo-code)
         set_dictionary_value_for_key(
             DICT_TRANSFERRED_AMOUNT,
             &vesting_info.vesting_type.to_string(),
             &(cumulative_transferred + amount),
         );
+        let _ = update_vesting_status(vesting_info.vesting_type);
         return true;
     }
+    let _ = update_vesting_status(vesting_info.vesting_type);
     false
+}
+
+#[cfg(feature = "contract-support")]
+pub fn get_current_balance_for_key(
+    contract_package_hash: ContractPackageHash,
+    owner: &Key,
+) -> U256 {
+    call_versioned_contract(
+        contract_package_hash,
+        None,
+        ENTRY_POINT_BALANCE_OF,
+        runtime_args! {ARG_ADDRESS => owner },
+    )
 }
 
 #[cfg(feature = "contract-support")]
