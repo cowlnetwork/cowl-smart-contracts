@@ -438,7 +438,7 @@ pub fn get_vesting_transfer(owner: Key, amount: U256) -> bool {
     .unwrap_or_default();
 
     // Ensure the cumulative transfer + requested transfer does not exceed vested amount
-    if cumulative_transferred + amount <= status.vested_amount {
+    if status.vested_amount.is_zero() || cumulative_transferred + amount <= status.vested_amount {
         // Update the transferred amount in the dictionary (pseudo-code)
         set_dictionary_value_for_key(
             DICT_TRANSFERRED_AMOUNT,

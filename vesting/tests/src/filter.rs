@@ -7,7 +7,7 @@ use casper_types::{Key, U256};
 use cowl_vesting::{constants::DICT_TRANSFERRED_AMOUNT, enums::VestingType};
 
 #[test]
-fn should_allow_transfer_for_non_vesting_address() {
+fn should_allow_transfer_for_non_vesting_address_at_zero_time() {
     let (
         mut builder,
         TestContext {
@@ -33,9 +33,40 @@ fn should_allow_transfer_for_non_vesting_address() {
         &liquidity_address,
         transfer_amount,
         &account_user_1,
-        Some(0_u64),
+        None,
     )
-    .expect_failure();
+    .expect_success()
+    .commit();
+
+    let actual_transfered_amount: U256 = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_type.to_string(),
+    );
+    assert_eq!(actual_transfered_amount, transfer_amount);
+}
+
+#[test]
+fn should_allow_transfer_for_non_vesting_address_at_time_one() {
+    let (
+        mut builder,
+        TestContext {
+            cowl_vesting_contract_hash,
+            cowl_cep18_token_contract_hash,
+            ref test_accounts,
+            ..
+        },
+    ) = setup();
+
+    let vesting_type = VestingType::Contributor;
+
+    let account_user_1 = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
+    let liquidity_address = *test_accounts
+        .get(&get_account_for_vesting(vesting_type))
+        .unwrap();
+
+    let transfer_amount = U256::one();
 
     cowl_cep18_token_transfer(
         &mut builder,
