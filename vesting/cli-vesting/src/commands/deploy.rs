@@ -70,14 +70,14 @@ async fn deploy_cep18_token() -> Result<(), Error> {
 
     if !contract_cep18_hash.is_empty() {
         let answer = prompt_yes_no(&format!(
-            "Contract already exists at {}, do you want to overwrite?",
+            "Contract already exists at {}, do you want to upgrade?",
             contract_cep18_hash
         ));
 
         if answer {
-            println!("You chose to overwrite.");
+            println!("You chose to upgrade.");
         } else {
-            println!("You chose not to overwrite.");
+            println!("You chose not to upgrade.");
             process::exit(0);
         }
     }

@@ -1,6 +1,5 @@
-use std::{env, time::Duration};
-
 use once_cell::sync::Lazy;
+use std::env;
 
 // All those following can be overifden by .env
 const DEFAULT_RPC_ADDRESS: &str = "http://127.0.0.1:7777";
@@ -54,7 +53,6 @@ pub static COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME: Lazy<String> = Lazy::new
 pub static NAME_VESTING: Lazy<String> =
     Lazy::new(|| env::var("NAME_VESTING").unwrap_or_else(|_| DEFAULT_NAME_VESTING.to_string()));
 
-pub const DEPLOY_TIME: Duration = Duration::from_millis(45000);
 pub const WASM_PATH: &str = "../tests/wasm/";
 
 pub const FUNDED_KEYS_URL: &str =
