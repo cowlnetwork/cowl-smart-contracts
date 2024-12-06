@@ -1,0 +1,35 @@
+[package]
+name = "cli-vesting"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "~4.4", features = ["derive"] }
+casper-rust-wasm-sdk = { git = "https://github.com/casper-ecosystem/rustSDK", branch = "dev-1.6" }
+cowl-vesting = { path = "../contract", default-features = false }
+reqwest = { version = "*", default-features = false, features = ["json"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+regex = "*"
+once_cell = "*"
+tokio = { version = "*", optional = true, features = ["macros"] }
+dotenvy = "*"
+hex = "*"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "cli_vesting"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cli_vesting"
+path = "src/main.rs"
+doc = false
+
+[features]
+default = ["tokio", "std-fs-io"]
+std-fs-io = []
+
+[patch.crates-io]
+casper-types = { version = "4.0.1", git = "https://github.com/casper-network/casper-node", branch = "dev" }
+casper-client = { version = "2.0.0", git = "https://github.com/casper-ecosystem/casper-client-rs", branch = "dev" }
