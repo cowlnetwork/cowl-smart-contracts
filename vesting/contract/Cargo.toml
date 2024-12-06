@@ -4,10 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-casper-contract = { version = "4.0.0", optional = true, features = [
-  "test-support",
-] }
-casper-types = "4.0.2"
+casper-contract = { version = "4.0.0", optional = true }
+casper-types = "4.0.1"
 casper-event-standard = { version = "0.5.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 time = { version = "0.3.37", default-features = false, features = ["alloc"] }

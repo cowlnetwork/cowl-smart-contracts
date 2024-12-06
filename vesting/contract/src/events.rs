@@ -16,6 +16,7 @@ pub enum Event {
     ChangeSecurity(ChangeSecurity),
     SetModalities(SetModalities),
     Upgrade(Upgrade),
+    CheckTransfer(CheckTransfer),
     CowlCep18ContractPackageUpdate(CowlCep18ContractPackageUpdate),
 }
 
@@ -43,6 +44,15 @@ impl SetModalities {
 pub struct Upgrade {}
 
 impl Upgrade {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Event, Debug, PartialEq, Eq, Default)]
+pub struct CheckTransfer {}
+
+impl CheckTransfer {
     pub fn new() -> Self {
         Self {}
     }
@@ -85,6 +95,7 @@ fn ces(event: Event) {
         Event::Upgrade(ev) => emit(ev),
         Event::ChangeSecurity(ev) => emit(ev),
         Event::CowlCep18ContractPackageUpdate(ev) => emit(ev),
+        Event::CheckTransfer(ev) => emit(ev),
     }
 }
 

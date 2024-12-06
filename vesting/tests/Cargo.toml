@@ -7,7 +7,7 @@ edition = "2021"
 cowl-vesting = { path = "../contract", default-features = false }
 casper-engine-test-support = { version = "7.0.3", features = ["test-support"] }
 casper-execution-engine = "7.0.3"
-casper-types = "4.0.2"
+casper-types = "4.0.1"
 casper-event-standard = { version = "0.5.0", default-features = false }
 
 [lib]

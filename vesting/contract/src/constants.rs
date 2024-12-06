@@ -1,7 +1,6 @@
 use time::Duration;
 
 pub const PREFIX_ACCESS_KEY_NAME: &str = "vesting_contract_package_access";
-pub const PREFIX_VESTING: &str = "vesting";
 pub const PREFIX_CONTRACT_NAME: &str = "vesting_contract_hash";
 pub const PREFIX_CONTRACT_VERSION: &str = "vesting_contract_version";
 pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "vesting_contract_package_hash";

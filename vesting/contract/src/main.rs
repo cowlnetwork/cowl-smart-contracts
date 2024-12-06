@@ -40,8 +40,8 @@ use cowl_vesting::{
     enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
     error::VestingError,
     events::{
-        init_events, record_event_dictionary, ChangeSecurity, CowlCep18ContractPackageUpdate,
-        Event, SetModalities, Upgrade,
+        init_events, record_event_dictionary, ChangeSecurity, CheckTransfer,
+        CowlCep18ContractPackageUpdate, Event, SetModalities, Upgrade,
     },
     security::{change_sec_badge, sec_check, SecurityBadge},
     utils::{
@@ -93,6 +93,8 @@ pub extern "C" fn check_vesting_transfer() {
     let _data: Option<Bytes> = get_named_arg(ARG_DATA);
 
     let vesting_transfer = get_vesting_transfer(_from, _amount);
+
+    record_event_dictionary(Event::CheckTransfer(CheckTransfer {}));
 
     if vesting_transfer {
         ret(CLValue::from_t(TransferFilterContractResult::ProceedTransfer).unwrap_or_revert());
@@ -527,8 +529,8 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
 pub extern "C" fn call() {
     let name: String = get_named_arg_with_user_errors(
         ARG_NAME,
-        VestingError::MissingCollectionName,
-        VestingError::InvalidCollectionName,
+        VestingError::MissingVestingName,
+        VestingError::MissingVestingName,
     )
     .unwrap_or_revert();
 
