@@ -1,16 +1,17 @@
 use crate::utils::{
-    config::get_key_pair_from_vesting,
+    config::{get_key_pair_from_vesting, CONFIG_LOCK},
     constants::{
         CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME,
         COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
         COWL_CEP_18_TOKEN_DECIMALS, COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL,
-        EVENT_ADDRESS, INSTALLER, PREFIX_CEP18, TTL, WASM_PATH,
+        EVENT_ADDRESS, INSTALLER, NAME_CEP18, NAME_VESTING, TTL, WASM_PATH,
     },
     keys::format_base64_to_pem,
     prompt_yes_no, read_wasm_file, sdk,
 };
 use casper_rust_wasm_sdk::{
     deploy_watcher::watcher::EventParseResult,
+    helpers::motes_to_cspr,
     rpcs::query_global_state::{KeyIdentifierInput, QueryGlobalStateParams},
     types::{
         deploy_hash::DeployHash,
@@ -18,19 +19,25 @@ use casper_rust_wasm_sdk::{
         public_key::PublicKey,
     },
 };
-use cowl_vesting::enums::EventsMode;
+use cowl_vesting::{
+    constants::{
+        ARG_COWL_CEP18_CONTRACT_PACKAGE, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+    },
+    enums::EventsMode,
+};
 use once_cell::sync::Lazy;
+use regex::Regex;
 use serde_json::{to_string, Value};
 use std::{io::Error, process};
 
-pub const ARG_NAME: &str = "name";
-pub const ARG_SYMBOL: &str = "symbol";
-pub const ARG_DECIMALS: &str = "decimals";
-pub const ARG_TOTAL_SUPPLY: &str = "total_supply";
-pub const ARG_EVENTS_MODE: &str = "events_mode";
-pub const ARG_ENABLE_MINT_BURN: &str = "enable_mint_burn";
+const ARG_NAME: &str = "name";
+const ARG_SYMBOL: &str = "symbol";
+const ARG_DECIMALS: &str = "decimals";
+const ARG_TOTAL_SUPPLY: &str = "total_supply";
+const ARG_EVENTS_MODE: &str = "events_mode";
+const ARG_ENABLE_MINT_BURN: &str = "enable_mint_burn";
 
-pub static ARGS_JSON: Lazy<String> = Lazy::new(|| {
+static ARGS_CEP18_JSON: Lazy<String> = Lazy::new(|| {
     format!(
         r#"[
 {{"name": "{ARG_NAME}", "type": "String", "value": "{COWL_CEP_18_TOKEN_NAME}"}},
@@ -40,15 +47,17 @@ pub static ARGS_JSON: Lazy<String> = Lazy::new(|| {
 {{"name": "{ARG_EVENTS_MODE}", "type": "U8", "value": {events_mode}}},
 {{"name": "{ARG_ENABLE_MINT_BURN}", "type": "Bool", "value": true}}
 ]"#,
-        COWL_CEP_18_TOKEN_NAME = COWL_CEP_18_TOKEN_NAME.to_string(),
-        COWL_CEP_18_TOKEN_SYMBOL = COWL_CEP_18_TOKEN_SYMBOL.to_string(),
-        COWL_CEP_18_TOKEN_DECIMALS = COWL_CEP_18_TOKEN_DECIMALS.to_string(),
+        COWL_CEP_18_TOKEN_NAME = *COWL_CEP_18_TOKEN_NAME,
+        COWL_CEP_18_TOKEN_SYMBOL = *COWL_CEP_18_TOKEN_SYMBOL,
+        COWL_CEP_18_TOKEN_DECIMALS = *COWL_CEP_18_TOKEN_DECIMALS,
         events_mode = EventsMode::CES as u8,
     )
 });
 
 pub async fn deploy_all_contracts() -> Result<(), Error> {
-    deploy_cep18_token().await
+    deploy_cep18_token().await?;
+    deploy_vesting_contract().await?;
+    Ok(())
 }
 
 async fn deploy_cep18_token() -> Result<(), Error> {
@@ -82,16 +91,15 @@ async fn deploy_cep18_token() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let module_bytes =
-        match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, PREFIX_CEP18.to_string())) {
-            Ok(module_bytes) => module_bytes,
-            Err(err) => {
-                eprintln!("Error reading file: {:?}", err);
-                return Err(err);
-            }
-        };
+    let module_bytes = match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, *NAME_CEP18)) {
+        Ok(module_bytes) => module_bytes,
+        Err(err) => {
+            eprintln!("Error reading file: {:?}", err);
+            return Err(err);
+        }
+    };
     session_params.set_session_bytes(module_bytes.into());
-    session_params.set_session_args_json(&ARGS_JSON);
+    session_params.set_session_args_json(&ARGS_CEP18_JSON);
 
     let install = sdk()
         .install(
@@ -101,23 +109,45 @@ async fn deploy_cep18_token() -> Result<(), Error> {
             None,
         )
         .await;
-    assert!(!install
-        .as_ref()
-        .unwrap()
-        .result
-        .api_version
-        .to_string()
-        .is_empty());
+    let api_version = install.as_ref().unwrap().result.api_version.to_string();
+
+    if api_version.is_empty() {
+        eprintln!("Failed to retrieve contract API version.");
+        process::exit(1)
+    }
 
     let deploy_hash = DeployHash::from(install.as_ref().unwrap().result.deploy_hash);
     let deploy_hash_as_string = deploy_hash.to_string();
-    assert!(!deploy_hash_as_string.is_empty());
-    println!("wait deploy_hash {}", deploy_hash_as_string);
+
+    if deploy_hash_as_string.is_empty() {
+        eprintln!("Failed to retrieve deploy hash.");
+        process::exit(1)
+    }
+
+    println!(
+        "wait deploy_hash for token install {}",
+        deploy_hash_as_string
+    );
+
     let event_parse_result: EventParseResult = sdk()
         .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
-    println!("{:?}", event_parse_result);
+
+    let motes = event_parse_result
+        .body
+        .unwrap()
+        .deploy_processed
+        .unwrap()
+        .execution_result
+        .success
+        .unwrap()
+        .cost;
+
+    let cost = motes_to_cspr(&motes).unwrap();
+
+    println!("Cost {cost} CSPR");
+
     let finalized_approvals = true;
     let get_deploy = sdk()
         .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
@@ -138,7 +168,11 @@ async fn deploy_cep18_token() -> Result<(), Error> {
     Ok(())
 }
 
-async fn get_contract_cep18_hash_keys(public_key: &PublicKey) -> Option<(String, String)> {
+async fn get_contract_hash_keys(
+    public_key: &PublicKey,
+    contract_name: &str,
+    contract_package_name: &str,
+) -> Option<(String, String)> {
     let query_params: QueryGlobalStateParams = QueryGlobalStateParams {
         key: KeyIdentifierInput::String(public_key.to_account_hash().to_formatted_string()),
         path: None,
@@ -153,8 +187,10 @@ async fn get_contract_cep18_hash_keys(public_key: &PublicKey) -> Option<(String,
     let query_global_state_result = query_global_state.unwrap_or_else(|_| {
         panic!("Failed to query global state");
     });
+
     let json_string = to_string(&query_global_state_result.result.stored_value)
         .unwrap_or_else(|_| panic!("Failed to convert stored value to string"));
+
     let parsed_json: Value =
         serde_json::from_str(&json_string).unwrap_or_else(|_| panic!("Failed to parse JSON"));
 
@@ -162,40 +198,194 @@ async fn get_contract_cep18_hash_keys(public_key: &PublicKey) -> Option<(String,
         .as_array()
         .unwrap_or_else(|| panic!("named_keys is not an array"));
 
-    let contract_cep18_hash = named_keys
+    // Find the contract hash
+    let contract_hash = named_keys
         .iter()
-        .find(|obj| obj["name"] == Value::String(COWL_CEP18_TOKEN_CONTRACT_HASH_NAME.to_string()))
+        .find(|obj| obj["name"] == Value::String(contract_name.to_string()))
         .and_then(|obj| obj["key"].as_str())
         .unwrap_or_else(|| {
-            eprintln!("Contract cep18 key not found in named_keys");
+            eprintln!("Contract hash key not found in named_keys");
             ""
         });
 
-    // If contract_cep18_hash is None, return early
-    if contract_cep18_hash.is_empty() {
+    if contract_hash.is_empty() {
         return None;
     }
 
-    // Find the contract CEP18 package hash
-    let contract_cep18_package_hash = named_keys
+    // Find the contract package hash
+    let contract_package_hash = named_keys
         .iter()
-        .find(|obj| {
-            obj["name"] == Value::String(COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME.to_string())
-        })
+        .find(|obj| obj["name"] == Value::String(contract_package_name.to_string()))
         .and_then(|obj| obj["key"].as_str())
         .unwrap_or_else(|| {
-            eprintln!("Package cep18 key not found in named_keys");
+            eprintln!("Package hash key not found in named_keys");
             ""
         });
 
-    // If contract_cep18_package_hash is None, return early
-    if contract_cep18_package_hash.is_empty() {
+    if contract_package_hash.is_empty() {
         return None;
     }
 
-    // Return the result if both keys were found
-    Some((
-        contract_cep18_hash.to_string(),
-        contract_cep18_package_hash.to_string(),
-    ))
+    Some((contract_hash.to_string(), contract_package_hash.to_string()))
+}
+
+// Specific function for getting CEP18 contract hash keys
+async fn get_contract_cep18_hash_keys(public_key: &PublicKey) -> Option<(String, String)> {
+    get_contract_hash_keys(
+        public_key,
+        &COWL_CEP18_TOKEN_CONTRACT_HASH_NAME.to_string(),
+        &COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME.to_string(),
+    )
+    .await
+}
+
+// Specific function for getting Vesting contract hash keys
+async fn get_contract_vesting_hash_keys(public_key: &PublicKey) -> Option<(String, String)> {
+    get_contract_hash_keys(
+        public_key,
+        &format!("{PREFIX_CONTRACT_NAME}_{}", *NAME_VESTING),
+        &format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{}", *NAME_VESTING),
+    )
+    .await
+}
+
+async fn deploy_vesting_contract() -> Result<(), Error> {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).unwrap();
+
+    let (cowl_cep18_token_contract_hash, cowl_cep18_token_package_hash) =
+        match get_contract_cep18_hash_keys(&key_pair.public_key).await {
+            Some((hash, package_hash)) => (hash, package_hash),
+            None => (String::from(""), String::from("")),
+        };
+
+    if cowl_cep18_token_contract_hash.is_empty() {
+        eprintln!("Token contract does not exist in installer named keys at {cowl_cep18_token_contract_hash}");
+        process::exit(1)
+    }
+
+    let deploy_params = DeployStrParams::new(
+        &CHAIN_NAME,
+        &key_pair.public_key_hex,
+        Some(format_base64_to_pem(&key_pair.private_key_base64.clone())),
+        None,
+        Some(TTL.to_string()),
+    );
+
+    let session_params = SessionStrParams::default();
+    let module_bytes = match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, *NAME_VESTING)) {
+        Ok(module_bytes) => module_bytes,
+        Err(err) => {
+            eprintln!("Error reading file: {:?}", err);
+            return Err(err);
+        }
+    };
+    session_params.set_session_bytes(module_bytes.into());
+
+    let mut args_vesting_json_addresses_vec: Vec<String> = Vec::new();
+    if let Some(config) = CONFIG_LOCK.lock().unwrap().as_ref() {
+        for (vesting_type, (key_pair, maybe_vesting_info)) in config {
+            if let Some(_vesting_info) = maybe_vesting_info {
+                args_vesting_json_addresses_vec.push(format!(
+                    r#"{{
+                        "name": "{vesting_type}",
+                        "type": "Key",
+                        "value": "{funded_address_key}"
+                    }}"#,
+                    vesting_type = vesting_type,
+                    funded_address_key =
+                        key_pair.public_key.to_account_hash().to_formatted_string()
+                ));
+            }
+        }
+    }
+
+    let args_vesting_json_addresses = args_vesting_json_addresses_vec.join(",\n");
+    let args_vesting_json = format!(
+        r#"[
+            {{
+                "name": "{ARG_NAME}",
+                "type": "String",
+                "value": "{NAME_VESTING}"
+            }},
+            {{
+                "name": "{ARG_COWL_CEP18_CONTRACT_PACKAGE}",
+                "type": "Key",
+                "value": "{cowl_cep18_token_package_hash}"
+            }},
+            {args_vesting_json_addresses}
+        ]"#,
+        NAME_VESTING = *NAME_VESTING
+    );
+
+    let args_vesting_json = Regex::new(r"\s+")
+        .unwrap()
+        .replace_all(&args_vesting_json, "")
+        .to_string();
+
+    session_params.set_session_args_json(&args_vesting_json);
+
+    let install = sdk()
+        .install(
+            deploy_params,
+            session_params,
+            &COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
+            None,
+        )
+        .await;
+
+    let api_version = install.as_ref().unwrap().result.api_version.to_string();
+
+    if api_version.is_empty() {
+        eprintln!("Failed to retrieve contract API version.");
+        process::exit(1)
+    }
+
+    let deploy_hash = DeployHash::from(install.as_ref().unwrap().result.deploy_hash);
+    let deploy_hash_as_string = deploy_hash.to_string();
+
+    if deploy_hash_as_string.is_empty() {
+        eprintln!("Failed to retrieve deploy hash.");
+        process::exit(1)
+    }
+
+    println!(
+        "wait deploy_hash for vesting install {}",
+        deploy_hash_as_string
+    );
+    let event_parse_result: EventParseResult = sdk()
+        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .await
+        .unwrap();
+    let motes = event_parse_result
+        .body
+        .unwrap()
+        .deploy_processed
+        .unwrap()
+        .execution_result
+        .success
+        .unwrap()
+        .cost;
+
+    let cost = motes_to_cspr(&motes).unwrap();
+
+    println!("Cost {cost} CSPR");
+
+    let finalized_approvals = true;
+    let get_deploy = sdk()
+        .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
+        .await;
+    let get_deploy = get_deploy.unwrap();
+    let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
+    println!("processed deploy hash {result}");
+    let (contract_vesting_hash, contract_vesting_package_hash) =
+        match get_contract_vesting_hash_keys(&key_pair.public_key).await {
+            Some((hash, package_hash)) => (hash, package_hash),
+            None => {
+                eprintln!("Failed to retrieve contract vesting keys.");
+                process::exit(1)
+            }
+        };
+    println!("contract_vesting_hash {contract_vesting_hash}");
+    println!("contract_vesting_package_hash {contract_vesting_package_hash}");
+    Ok(())
 }

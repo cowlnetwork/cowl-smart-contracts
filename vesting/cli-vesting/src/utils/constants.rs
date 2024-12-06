@@ -11,7 +11,8 @@ pub const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000";
 pub const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "test";
 pub const DEFAULT_COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
 pub const DEFAULT_COWL_CEP_18_TOKEN_DECIMALS: u8 = 9;
-pub const DEFAULT_PREFIX_CEP18: &str = "cowl_cep18";
+pub const DEFAULT_NAME_CEP18: &str = "cowl_cep18";
+pub const DEFAULT_NAME_VESTING: &str = "cowl_vesting";
 
 pub static RPC_ADDRESS: Lazy<String> =
     Lazy::new(|| env::var("RPC_ADDRESS").unwrap_or_else(|_| DEFAULT_RPC_ADDRESS.to_string()));
@@ -38,23 +39,20 @@ pub static COWL_CEP_18_TOKEN_DECIMALS: Lazy<String> = Lazy::new(|| {
     env::var("COWL_CEP_18_TOKEN_DECIMALS")
         .unwrap_or_else(|_| DEFAULT_COWL_CEP_18_TOKEN_DECIMALS.to_string())
 });
-pub static PREFIX_CEP18: Lazy<String> =
-    Lazy::new(|| env::var("PREFIX_CEP18").unwrap_or_else(|_| DEFAULT_PREFIX_CEP18.to_string()));
+pub static NAME_CEP18: Lazy<String> =
+    Lazy::new(|| env::var("NAME_CEP18").unwrap_or_else(|_| DEFAULT_NAME_CEP18.to_string()));
 
-pub static COWL_CEP18_TOKEN_CONTRACT_HASH_NAME: Lazy<String> = Lazy::new(|| {
-    format!(
-        "{}_contract_hash_{}",
-        PREFIX_CEP18.to_string(),
-        COWL_CEP_18_TOKEN_NAME.to_string()
-    )
-});
+pub static COWL_CEP18_TOKEN_CONTRACT_HASH_NAME: Lazy<String> =
+    Lazy::new(|| format!("{}_contract_hash_{}", *NAME_CEP18, *COWL_CEP_18_TOKEN_NAME));
 pub static COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME: Lazy<String> = Lazy::new(|| {
     format!(
         "{}_contract_package_hash_{}",
-        PREFIX_CEP18.to_string(),
-        COWL_CEP_18_TOKEN_NAME.to_string()
+        *NAME_CEP18, *COWL_CEP_18_TOKEN_NAME
     )
 });
+
+pub static NAME_VESTING: Lazy<String> =
+    Lazy::new(|| env::var("NAME_VESTING").unwrap_or_else(|_| DEFAULT_NAME_VESTING.to_string()));
 
 pub const DEPLOY_TIME: Duration = Duration::from_millis(45000);
 pub const WASM_PATH: &str = "../tests/wasm/";

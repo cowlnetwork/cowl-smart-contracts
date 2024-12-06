@@ -11,7 +11,7 @@ async fn main() {
 
     let cli = Cli::parse();
     match cli.command {
-        Commands::ListFundedAdresses => commands::addresses::list_funded_addresses(),
+        Commands::ListFundedAdresses => commands::addresses::print_funded_addresses(),
         Commands::DeployContracts {} => {
             if let Err(e) = commands::deploy::deploy_all_contracts().await {
                 eprintln!("Error deploying contracts: {}", e);
