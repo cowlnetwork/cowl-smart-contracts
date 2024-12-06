@@ -4,7 +4,7 @@ use crate::utils::{
         CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME,
         COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
         COWL_CEP_18_TOKEN_DECIMALS, COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL,
-        DEFAULT_EVENT_ADDRESS, DEFAULT_TTL, INSTALLER, PREFIX_CEP18, WASM_PATH,
+        EVENT_ADDRESS, INSTALLER, PREFIX_CEP18, TTL, WASM_PATH,
     },
     keys::format_base64_to_pem,
     prompt_yes_no, read_wasm_file, sdk,
@@ -40,11 +40,14 @@ pub static ARGS_JSON: Lazy<String> = Lazy::new(|| {
 {{"name": "{ARG_EVENTS_MODE}", "type": "U8", "value": {events_mode}}},
 {{"name": "{ARG_ENABLE_MINT_BURN}", "type": "Bool", "value": true}}
 ]"#,
+        COWL_CEP_18_TOKEN_NAME = COWL_CEP_18_TOKEN_NAME.to_string(),
+        COWL_CEP_18_TOKEN_SYMBOL = COWL_CEP_18_TOKEN_SYMBOL.to_string(),
+        COWL_CEP_18_TOKEN_DECIMALS = COWL_CEP_18_TOKEN_DECIMALS.to_string(),
         events_mode = EventsMode::CES as u8,
     )
 });
 
-pub async fn deploy_contracts() -> Result<(), Error> {
+pub async fn deploy_all_contracts() -> Result<(), Error> {
     deploy_cep18_token().await
 }
 
@@ -75,17 +78,18 @@ async fn deploy_cep18_token() -> Result<(), Error> {
         &key_pair.public_key_hex,
         Some(format_base64_to_pem(&key_pair.private_key_base64.clone())),
         None,
-        Some(DEFAULT_TTL.to_string()),
+        Some(TTL.to_string()),
     );
 
     let session_params = SessionStrParams::default();
-    let module_bytes = match read_wasm_file(&format!("{WASM_PATH}{PREFIX_CEP18}.wasm")) {
-        Ok(module_bytes) => module_bytes,
-        Err(err) => {
-            eprintln!("Error reading file: {:?}", err);
-            return Err(err);
-        }
-    };
+    let module_bytes =
+        match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, PREFIX_CEP18.to_string())) {
+            Ok(module_bytes) => module_bytes,
+            Err(err) => {
+                eprintln!("Error reading file: {:?}", err);
+                return Err(err);
+            }
+        };
     session_params.set_session_bytes(module_bytes.into());
     session_params.set_session_args_json(&ARGS_JSON);
 
@@ -93,7 +97,7 @@ async fn deploy_cep18_token() -> Result<(), Error> {
         .install(
             deploy_params,
             session_params,
-            COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
+            &COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
             None,
         )
         .await;
@@ -110,7 +114,7 @@ async fn deploy_cep18_token() -> Result<(), Error> {
     assert!(!deploy_hash_as_string.is_empty());
     println!("wait deploy_hash {}", deploy_hash_as_string);
     let event_parse_result: EventParseResult = sdk()
-        .wait_deploy(DEFAULT_EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
     println!("{:?}", event_parse_result);

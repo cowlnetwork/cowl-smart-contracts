@@ -13,7 +13,7 @@ async fn main() {
     match cli.command {
         Commands::ListFundedAdresses => commands::addresses::list_funded_addresses(),
         Commands::DeployContracts {} => {
-            if let Err(e) = commands::deploy::deploy_contracts().await {
+            if let Err(e) = commands::deploy::deploy_all_contracts().await {
                 eprintln!("Error deploying contracts: {}", e);
                 std::process::exit(1);
             }

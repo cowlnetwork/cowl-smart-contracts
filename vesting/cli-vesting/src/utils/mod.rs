@@ -1,5 +1,5 @@
 use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
-use constants::DEFAULT_RPC_ADDRESS;
+use constants::RPC_ADDRESS;
 use once_cell::sync::Lazy;
 use std::io::Write;
 use std::{
@@ -19,7 +19,7 @@ pub static SDK_INSTANCE: Lazy<Mutex<Option<Arc<SDK>>>> = Lazy::new(|| Mutex::new
 pub fn sdk() -> Arc<SDK> {
     let mut instance = SDK_INSTANCE.lock().unwrap();
     if instance.is_none() {
-        let new_sdk = SDK::new(Some(DEFAULT_RPC_ADDRESS.to_string()), Some(Verbosity::High));
+        let new_sdk = SDK::new(Some(RPC_ADDRESS.to_string()), Some(Verbosity::High));
         *instance = Some(Arc::new(new_sdk));
     }
     instance.clone().unwrap()

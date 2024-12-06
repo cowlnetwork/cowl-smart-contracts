@@ -1,3 +1,4 @@
+use super::constants::{INSTALLER, USER_1, USER_2};
 use crate::utils::keys::{fetch_funded_keys, insert_config_info, KeyPair};
 use cowl_vesting::{enums::VESTING_INFO, vesting::VestingInfo};
 use dotenvy::dotenv;
@@ -8,14 +9,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use super::constants::{INSTALLER, USER_1, USER_2};
-
 type KeyVestingInfoPair = (KeyPair, Option<VestingInfo>);
 // Type alias for the HashMap structure
 pub type ConfigInfo = HashMap<String, KeyVestingInfoPair>;
 // Type alias for the Mutex-wrapped Option of the map
-pub type ConfigInfoLock = Arc<Mutex<Option<ConfigInfo>>>;
-
+type ConfigInfoLock = Arc<Mutex<Option<ConfigInfo>>>;
 // Lazy static variable to hold keys in memory
 pub static CONFIG_LOCK: Lazy<ConfigInfoLock> = Lazy::new(|| Arc::new(Mutex::new(None)));
 
@@ -56,6 +54,7 @@ pub async fn init() {
 
     // dbg!(config_lock); // Just to show the result
 }
+
 pub fn get_key_pair_from_vesting(identifier: &str) -> Option<KeyPair> {
     // Lock the global CONFIG_LOCK
     let config_lock = CONFIG_LOCK.lock().unwrap();
