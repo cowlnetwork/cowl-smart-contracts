@@ -1,8 +1,14 @@
 use crate::utility::{
+    constants::{
+        ACCOUNT_COMMUNITY, ACCOUNT_CONTRIBUTOR, ACCOUNT_DEVELOPMENT, ACCOUNT_LIQUIDITY,
+        ACCOUNT_STACKING, ACCOUNT_TREASURY, VESTING_CONTRACT_VERSION, VESTING_CONTRACT_WASM,
+        VESTING_TEST_NAME,
+    },
     installer_request_builders::{setup, TestContext},
     support::{get_account_for_vesting, get_dictionary_value_from_key},
 };
-use casper_types::{Key, U256};
+use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
+use casper_types::{runtime_args, ContractPackageHash, Key, RuntimeArgs, U256};
 use cowl_vesting::{
     constants::{
         ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
@@ -10,7 +16,7 @@ use cowl_vesting::{
         ARG_TRANSFER_FILTER_METHOD, COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES,
         DICT_SECURITY_BADGES, DICT_START_TIME, DICT_VESTING_AMOUNT, DICT_VESTING_STATUS,
     },
-    enums::VESTING_INFO,
+    enums::{EventsMode, VestingType, VESTING_INFO},
     vesting::VestingStatus,
 };
 
@@ -142,4 +148,102 @@ fn should_install_contract() {
         COWL_CEP_18_TOKEN_TOTAL_SUPPLY.into(),
         "The total vested amount does not match the token total supply!"
     );
+}
+
+#[test]
+fn should_prevent_reinstall_contract() {
+    let (
+        mut builder,
+        TestContext {
+            cowl_vesting_contract_hash,
+            ref test_accounts,
+            ..
+        },
+    ) = setup();
+
+    let version_key = *builder
+        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .expect("should have account")
+        .named_keys()
+        .get(VESTING_CONTRACT_VERSION)
+        .expect("version uref should exist");
+
+    let version = builder
+        .query(None, version_key, &[])
+        .expect("should be stored value.")
+        .as_cl_value()
+        .expect("should be cl value.")
+        .clone()
+        .into_t::<u32>()
+        .expect("should be u32.");
+
+    dbg!(version);
+
+    let vesting_contract = builder
+        .get_contract(cowl_vesting_contract_hash)
+        .expect("should have vesting contract");
+    let named_keys = vesting_contract.named_keys();
+    dbg!(named_keys);
+
+    let cowl_cep18_token_package_hash: ContractPackageHash = builder
+        .get_value::<ContractPackageHash>(
+            cowl_vesting_contract_hash,
+            ARG_COWL_CEP18_CONTRACT_PACKAGE,
+        );
+
+    let mut install_args = runtime_args!(
+        ARG_NAME => VESTING_TEST_NAME,
+        ARG_EVENTS_MODE => EventsMode::CES as u8,
+        ARG_COWL_CEP18_CONTRACT_PACKAGE =>
+        Key::from(cowl_cep18_token_package_hash),
+    );
+
+    let accounts = vec![
+        (
+            VestingType::Liquidity.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_LIQUIDITY).unwrap()),
+        ),
+        (
+            VestingType::Contributor.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_CONTRIBUTOR).unwrap()),
+        ),
+        (
+            VestingType::Development.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_DEVELOPMENT).unwrap()),
+        ),
+        (
+            VestingType::Treasury.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_TREASURY).unwrap()),
+        ),
+        (
+            VestingType::Community.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_COMMUNITY).unwrap()),
+        ),
+        (
+            VestingType::Staking.to_string(),
+            Key::from(*test_accounts.get(&ACCOUNT_STACKING).unwrap()),
+        ),
+    ];
+
+    for (address_key, account_key) in accounts {
+        let _ = install_args.insert(address_key.to_string(), Key::from(account_key));
+    }
+
+    // Install vesting contract with token
+    let reinstall_request_contract =
+        ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, VESTING_CONTRACT_WASM, install_args)
+            .build();
+
+    builder
+        .exec(reinstall_request_contract)
+        .expect_success()
+        .commit();
+
+    let vesting_contract = builder
+        .get_contract(cowl_vesting_contract_hash)
+        .expect("should have vesting contract");
+    let new_named_keys = vesting_contract.named_keys();
+    dbg!(new_named_keys);
+
+    assert_eq!(named_keys, new_named_keys)
 }

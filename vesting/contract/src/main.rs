@@ -530,7 +530,7 @@ pub extern "C" fn call() {
     let name: String = get_named_arg_with_user_errors(
         ARG_NAME,
         VestingError::MissingVestingName,
-        VestingError::MissingVestingName,
+        VestingError::InvalidVestingName,
     )
     .unwrap_or_revert();
 
@@ -541,7 +541,7 @@ pub extern "C" fn call() {
 
     if upgrade_flag.is_some() && upgrade_flag.unwrap() && access_key.is_some() {
         upgrade_contract(&name)
-    } else {
+    } else if access_key.is_none() {
         install_contract(&name)
     }
 }

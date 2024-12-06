@@ -29,7 +29,6 @@ pub fn assert_expected_error(actual_error: EngineStateError, error_code: u16, re
         "{:?}",
         EngineStateError::Exec(execution::Error::Revert(ApiError::User(error_code)))
     );
-
     assert_eq!(
         actual, expected,
         "Error should match {error_code} with reason: {reason}"
