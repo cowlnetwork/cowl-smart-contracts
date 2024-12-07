@@ -22,7 +22,7 @@ async fn main() {
     log::info!("Command executed: {}", cli.command);
 
     match cli.command {
-        Commands::ListFundedAdresses => commands::addresses::print_funded_addresses(),
+        Commands::ListFundedAdresses => commands::addresses::print_funded_addresses().await,
         Commands::DeployContracts { token, vesting } => {
             let result = if token {
                 commands::deploy::deploy_cep18_token().await
@@ -37,8 +37,16 @@ async fn main() {
                 std::process::exit(1);
             }
         }
-        Commands::TokenDistributionSummary => commands::summary::token_distribution_summary(),
-        Commands::VestingStatutes => commands::statutes::vesting_statutes(),
+        Commands::VestingInfo { vesting_type } => {
+            commands::info::print_vesting_info(
+                vesting_type
+                    .as_str()
+                    .try_into()
+                    .expect("Failed to convert vesting type"),
+            )
+            .await
+        }
+        Commands::VestingStatus => commands::status::vesting_status(),
     }
 }
 

@@ -4,10 +4,8 @@ use cowl_vesting::{enums::VESTING_INFO, vesting::VestingInfo};
 use dotenvy::dotenv;
 use once_cell::sync::Lazy;
 use std::collections::VecDeque;
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::Mutex;
 
 type KeyVestingInfoPair = (KeyPair, Option<VestingInfo>);
 // Type alias for the HashMap structure
@@ -49,15 +47,17 @@ pub async fn init() {
     }
 
     // Store the key info in a mutex
-    let mut config_lock = CONFIG_LOCK.lock().unwrap();
+    let mut config_lock = CONFIG_LOCK.lock().await;
+
+    // Update the value inside the Option
     *config_lock = Some(config_info);
 
     // dbg!(config_lock); // Just to show the result
 }
 
-pub fn get_key_pair_from_vesting(identifier: &str) -> Option<KeyPair> {
+pub async fn get_key_pair_from_vesting(identifier: &str) -> Option<KeyPair> {
     // Lock the global CONFIG_LOCK
-    let config_lock = CONFIG_LOCK.lock().unwrap();
+    let config_lock = CONFIG_LOCK.lock().await;
     // Access the underlying ConfigInfo if available
     if let Some(ref config_info) = *config_lock {
         // Look up the KeyVestingInfoPair by vesting_type

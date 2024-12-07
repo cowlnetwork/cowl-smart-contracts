@@ -23,19 +23,22 @@ pub enum Commands {
         #[clap(long)]
         vesting: bool, // Deploy only the vesting contract
     },
-    #[command(name = "summary")]
-    TokenDistributionSummary,
-    #[command(name = "vesting")]
-    VestingStatutes,
+    #[command(name = "info")]
+    VestingInfo {
+        #[clap(long)]
+        vesting_type: String,
+    },
+    #[command(name = "status")]
+    VestingStatus,
 }
 
 impl Display for Commands {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Commands::ListFundedAdresses => write!(f, "ListFundedAdresses"),
+        match self {
+            Commands::ListFundedAdresses => write!(f, "List Funded Adresses"),
 
             Commands::DeployContracts { token, vesting } => {
-                if token || vesting {
+                if *token || *vesting {
                     write!(
                         f,
                         "Deploy Contracts {{ token: {}, vesting: {} }}",
@@ -46,8 +49,8 @@ impl Display for Commands {
                 }
             }
 
-            Commands::TokenDistributionSummary => write!(f, "TokenDistributionSummary"),
-            Commands::VestingStatutes => write!(f, "VestingStatutes"),
+            Commands::VestingInfo { vesting_type } => write!(f, "Vesting Info  {}", vesting_type),
+            Commands::VestingStatus => write!(f, "Vesting Status"),
         }
     }
 }

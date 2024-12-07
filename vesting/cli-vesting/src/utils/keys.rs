@@ -197,6 +197,7 @@ fn load_key_from_env_or_file(
 
     false
 }
+
 pub fn format_base64_to_pem(private_key: &str) -> String {
     format!("{BEGIN_PRIVATE_KEY} {private_key} {END_PRIVATE_KEY}")
 }

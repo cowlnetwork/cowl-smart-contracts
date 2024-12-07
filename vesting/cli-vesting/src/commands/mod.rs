@@ -1,4 +1,4 @@
 pub mod addresses;
 pub mod deploy;
-pub mod statutes;
-pub mod summary;
+pub mod info;
+pub mod status;

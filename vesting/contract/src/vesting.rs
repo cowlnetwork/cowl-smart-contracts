@@ -26,6 +26,10 @@ use casper_types::{runtime_args, CLValue, ContractPackageHash, RuntimeArgs};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use time::Duration;
 
+pub trait VestingData: Sized {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error>;
+}
+
 #[derive(Clone, Eq, PartialEq)]
 pub struct VestingInfo {
     pub vesting_type: VestingType,
@@ -60,6 +64,12 @@ impl VestingInfo {
             },
             rem,
         ))
+    }
+}
+
+impl VestingData for VestingInfo {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        VestingInfo::from_bytes(bytes)
     }
 }
 
@@ -217,11 +227,50 @@ impl VestingStatus {
             available_for_release_amount,
         }
     }
+
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), casper_types::bytesrepr::Error> {
+        let (vesting_type, bytes) = VestingType::from_bytes(bytes)?;
+        let (total_amount, bytes) = U256::from_bytes(bytes)?;
+        let (vested_amount, bytes) = U256::from_bytes(bytes)?;
+        let (is_fully_vested, bytes) = bool::from_bytes(bytes)?;
+        let (vesting_duration_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
+        let (start_time_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
+        let (time_until_next_release_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
+        let (monthly_release_amount, bytes) = U256::from_bytes(bytes)?;
+        let (released_amount, bytes) = U256::from_bytes(bytes)?;
+        let (available_for_release_amount, bytes) = U256::from_bytes(bytes)?;
+
+        let vesting_duration = Duration::new(vesting_duration_ms as i64, 0);
+        let start_time = Duration::new(start_time_ms as i64, 0);
+        let time_until_next_release = Duration::new(time_until_next_release_ms as i64, 0);
+
+        Ok((
+            VestingStatus::new(
+                vesting_type,
+                total_amount,
+                vested_amount,
+                is_fully_vested,
+                vesting_duration,
+                start_time,
+                time_until_next_release,
+                monthly_release_amount,
+                released_amount,
+                available_for_release_amount,
+            ),
+            bytes,
+        ))
+    }
 }
 
 impl CLTyped for VestingStatus {
     fn cl_type() -> CLType {
         Bytes::cl_type()
+    }
+}
+
+impl VestingData for VestingStatus {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        VestingStatus::from_bytes(bytes)
     }
 }
 
@@ -258,37 +307,8 @@ impl ToBytes for VestingStatus {
 }
 
 impl FromBytes for VestingStatus {
-    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), casper_types::bytesrepr::Error> {
-        let (vesting_type, bytes) = VestingType::from_bytes(bytes)?;
-        let (total_amount, bytes) = U256::from_bytes(bytes)?;
-        let (vested_amount, bytes) = U256::from_bytes(bytes)?;
-        let (is_fully_vested, bytes) = bool::from_bytes(bytes)?;
-        let (vesting_duration_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
-        let (start_time_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
-        let (time_until_next_release_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
-        let (monthly_release_amount, bytes) = U256::from_bytes(bytes)?;
-        let (released_amount, bytes) = U256::from_bytes(bytes)?;
-        let (available_for_release_amount, bytes) = U256::from_bytes(bytes)?;
-
-        let vesting_duration = Duration::new(vesting_duration_ms as i64, 0);
-        let start_time = Duration::new(start_time_ms as i64, 0);
-        let time_until_next_release = Duration::new(time_until_next_release_ms as i64, 0);
-
-        Ok((
-            VestingStatus::new(
-                vesting_type,
-                total_amount,
-                vested_amount,
-                is_fully_vested,
-                vesting_duration,
-                start_time,
-                time_until_next_release,
-                monthly_release_amount,
-                released_amount,
-                available_for_release_amount,
-            ),
-            bytes,
-        ))
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        VestingStatus::from_bytes(bytes)
     }
 }
 
