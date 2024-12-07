@@ -37,7 +37,7 @@ use cowl_vesting::{
         PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
-    enums::{EventsMode, TransferFilterContractResult, VestingType},
+    enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
     error::VestingError,
     events::{
         init_events, record_event_dictionary, ChangeSecurity, CheckTransfer,
@@ -442,16 +442,11 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
     storage::new_dictionary(DICT_VESTING_STATUS).unwrap_or_revert();
     storage::new_dictionary(DICT_TRANSFERRED_AMOUNT).unwrap_or_revert();
 
-    for vesting_info in get_vesting_info().iter() {
+    for vesting_info in VESTING_INFO.iter() {
         set_dictionary_value_for_key(
             DICT_ADDRESSES,
             &vesting_info.vesting_type.to_string(),
             &get_named_arg::<Key>(&vesting_info.vesting_type.to_string()),
-        );
-        set_dictionary_value_for_key(
-            DICT_VESTING_INFO,
-            &vesting_info.vesting_type.to_string(),
-            &vesting_info,
         );
     }
 
@@ -508,6 +503,14 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
         );
 
         let _ = update_vesting_status(allocation.vesting_type);
+    }
+
+    for vesting_info in get_vesting_info().iter() {
+        set_dictionary_value_for_key(
+            DICT_VESTING_INFO,
+            &vesting_info.vesting_type.to_string(),
+            &vesting_info,
+        );
     }
 
     let actual_supply: U256 = call_versioned_contract(
