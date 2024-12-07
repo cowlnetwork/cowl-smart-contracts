@@ -44,6 +44,29 @@ impl VestingInfo {
             self.vesting_duration.map(|d| d.whole_seconds() as u64) // Displaying just seconds if duration is Some
         )
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        let (vesting_type, rem) = VestingType::from_bytes(bytes)?;
+        let (maybe_vesting_address_key, rem) = Option::<Key>::from_bytes(rem)?;
+        let (vesting_duration_opt, rem) = Option::<u64>::from_bytes(rem)?;
+
+        let vesting_duration = vesting_duration_opt.map(|seconds| Duration::new(seconds as i64, 0));
+
+        Ok((
+            VestingInfo {
+                vesting_type,
+                maybe_vesting_address_key,
+                vesting_duration,
+            },
+            rem,
+        ))
+    }
+}
+
+impl FromBytes for VestingInfo {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        VestingInfo::from_bytes(bytes)
+    }
 }
 
 impl fmt::Debug for VestingInfo {
@@ -79,25 +102,6 @@ impl ToBytes for VestingInfo {
             + Option::<u64>::serialized_length(
                 &self.vesting_duration.map(|d| d.whole_seconds() as u64),
             )
-    }
-}
-
-impl FromBytes for VestingInfo {
-    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
-        let (vesting_type, rem) = VestingType::from_bytes(bytes)?;
-        let (maybe_vesting_address_key, rem) = Option::<Key>::from_bytes(rem)?;
-        let (vesting_duration_opt, rem) = Option::<u64>::from_bytes(rem)?;
-
-        let vesting_duration = vesting_duration_opt.map(|seconds| Duration::new(seconds as i64, 0));
-
-        Ok((
-            VestingInfo {
-                vesting_type,
-                maybe_vesting_address_key,
-                vesting_duration,
-            },
-            rem,
-        ))
     }
 }
 
@@ -321,7 +325,7 @@ pub fn ret_vesting_info(vesting_type: VestingType) {
 }
 
 #[cfg(feature = "contract-support")]
-fn get_vesting_info() -> Vec<VestingInfo> {
+pub fn get_vesting_info() -> Vec<VestingInfo> {
     VESTING_INFO
         .iter()
         .map(|vesting_info| VestingInfo {

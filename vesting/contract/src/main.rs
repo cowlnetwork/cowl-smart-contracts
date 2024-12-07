@@ -37,7 +37,7 @@ use cowl_vesting::{
         PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
-    enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
+    enums::{EventsMode, TransferFilterContractResult, VestingType},
     error::VestingError,
     events::{
         init_events, record_event_dictionary, ChangeSecurity, CheckTransfer,
@@ -50,8 +50,8 @@ use cowl_vesting::{
         get_verified_caller, set_dictionary_value_for_key,
     },
     vesting::{
-        calculate_vesting_allocations, get_current_balance_for_key, get_vesting_transfer,
-        ret_vesting_info, ret_vesting_status, update_vesting_status,
+        calculate_vesting_allocations, get_current_balance_for_key, get_vesting_info,
+        get_vesting_transfer, ret_vesting_info, ret_vesting_status, update_vesting_status,
     },
 };
 
@@ -442,7 +442,7 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
     storage::new_dictionary(DICT_VESTING_STATUS).unwrap_or_revert();
     storage::new_dictionary(DICT_TRANSFERRED_AMOUNT).unwrap_or_revert();
 
-    for vesting_info in VESTING_INFO.iter() {
+    for vesting_info in get_vesting_info().iter() {
         set_dictionary_value_for_key(
             DICT_ADDRESSES,
             &vesting_info.vesting_type.to_string(),
