@@ -34,7 +34,7 @@ pub async fn fetch_funded_keys() -> Result<Vec<KeyPair>, Box<dyn Error>> {
         let ts_content = match fetch_ts_file(FUNDED_KEYS_URL).await {
             Ok(content) => content,
             Err(e) => {
-                eprintln!("Error fetching TS file: {}", e);
+                log::error!("Error fetching TS file: {}", e);
                 return Err(e);
             }
         };
@@ -43,17 +43,17 @@ pub async fn fetch_funded_keys() -> Result<Vec<KeyPair>, Box<dyn Error>> {
         let funded_keys = match parse_funded_keys_from_content(&ts_content) {
             Ok(keys) => keys,
             Err(e) => {
-                eprintln!("Error parsing FUNDED_KEYS: {}", e);
+                log::error!("Error parsing FUNDED_KEYS: {}", e);
                 return Err(e);
             }
         };
 
         // Step 3: Write the parsed keys to the JSON file
         if let Err(e) = write_keys_to_json(&funded_keys, FUNDED_KEYS_JSON_FILE_PATH) {
-            eprintln!("Error writing keys to json: {}", e);
+            log::error!("Error writing keys to json: {}", e);
             return Err(e);
         } else {
-            println!(
+            log::info!(
                 "Keys successfully written to {}",
                 FUNDED_KEYS_JSON_FILE_PATH
             );
@@ -65,7 +65,7 @@ pub async fn fetch_funded_keys() -> Result<Vec<KeyPair>, Box<dyn Error>> {
         match load_keys_from_json(FUNDED_KEYS_JSON_FILE_PATH) {
             Ok(keys) => Ok(keys),
             Err(e) => {
-                eprintln!("Error loading keys from JSON file: {}", e);
+                log::error!("Error loading keys from JSON file: {}", e);
                 Err(e)
             }
         }

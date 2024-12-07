@@ -34,8 +34,8 @@ pub fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String, Strin
 pub fn print_funded_addresses() {
     if let Some(key_info_map) = list_funded_addresses() {
         let json_output = serde_json::to_string_pretty(&key_info_map).unwrap();
-        println!("{}", json_output);
+        log::info!("{}", json_output);
     } else {
-        println!("Config is empty or not initialized.");
+        log::error!("Config is empty or not initialized");
     }
 }

@@ -23,7 +23,7 @@ pub async fn init() {
     let mut funded_keys: VecDeque<KeyPair> = match fetch_funded_keys().await {
         Ok(keys) => keys,
         Err(e) => {
-            eprintln!("Error fetching keys: {}", e);
+            log::error!("Error fetching keys: {}", e);
             return;
         }
     }

@@ -15,6 +15,9 @@ once_cell = "*"
 tokio = { version = "*", optional = true, features = ["macros"] }
 dotenvy = "*"
 hex = "*"
+log = "*"
+env_logger = "*"
+chrono = "*"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -37,7 +37,7 @@ pub fn read_wasm_file(file_path: &str) -> Result<Vec<u8>, io::Error> {
 
 pub fn prompt_yes_no(question: &str) -> bool {
     loop {
-        print!("{} (y/n): ", question);
+        log::warn!("{} (y/n): ", question);
         io::stdout().flush().unwrap(); // Ensure the prompt is printed
 
         let mut input = String::new();
@@ -46,7 +46,7 @@ pub fn prompt_yes_no(question: &str) -> bool {
         match input.trim().to_lowercase().as_str() {
             "y" | "yes" => return true,
             "n" | "no" => return false,
-            _ => println!("Please answer with 'y' or 'n'."),
+            _ => println!("Please answer with 'y' or 'n'"),
         }
     }
 }
