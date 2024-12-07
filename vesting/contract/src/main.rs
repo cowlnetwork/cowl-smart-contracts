@@ -448,6 +448,11 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
             &vesting_info.vesting_type.to_string(),
             &get_named_arg::<Key>(&vesting_info.vesting_type.to_string()),
         );
+        set_dictionary_value_for_key(
+            DICT_VESTING_INFO,
+            &vesting_info.vesting_type.to_string(),
+            &vesting_info,
+        );
     }
 
     let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
