@@ -1,6 +1,6 @@
-use std::fmt::{self, Display};
-
+use crate::commands;
 use clap::{Parser, Subcommand};
+use std::fmt::{self, Display};
 
 /// CLI Tool for managing contracts and token distributions
 #[derive(Parser)]
@@ -27,9 +27,62 @@ pub enum Commands {
     VestingInfo {
         #[clap(long)]
         vesting_type: String,
+        #[clap(long)]
+        call_entry_point: bool,
     },
     #[command(name = "status")]
-    VestingStatus,
+    VestingStatus {
+        #[clap(long)]
+        vesting_type: String,
+    },
+}
+
+pub async fn run() {
+    let cli = Cli::parse();
+
+    log::info!("Command executed: {}", cli.command);
+
+    match cli.command {
+        Commands::ListFundedAdresses => commands::addresses::print_funded_addresses().await,
+        Commands::DeployContracts { token, vesting } => {
+            let result = if token {
+                commands::deploy::deploy_cep18_token().await
+            } else if vesting {
+                commands::deploy::deploy_vesting_contract().await
+            } else {
+                commands::deploy::deploy_all_contracts().await
+            };
+
+            if let Err(e) = result {
+                log::error!("Error deploying contracts: {}", e);
+                std::process::exit(1);
+            }
+        }
+        Commands::VestingInfo {
+            vesting_type,
+            call_entry_point,
+        } => {
+            commands::info::print_vesting_info(
+                vesting_type
+                    .as_str()
+                    .try_into()
+                    .expect("Failed to convert vesting type"),
+                call_entry_point,
+            )
+            .await
+        }
+        Commands::VestingStatus { vesting_type } => {
+            let call_entry_point = true; // Always call entry point before getting status
+            commands::status::print_vesting_status(
+                vesting_type
+                    .as_str()
+                    .try_into()
+                    .expect("Failed to convert vesting type"),
+                call_entry_point,
+            )
+            .await
+        }
+    }
 }
 
 impl Display for Commands {
@@ -49,8 +102,13 @@ impl Display for Commands {
                 }
             }
 
-            Commands::VestingInfo { vesting_type } => write!(f, "Vesting Info  {}", vesting_type),
-            Commands::VestingStatus => write!(f, "Vesting Status"),
+            Commands::VestingInfo {
+                vesting_type,
+                call_entry_point: _,
+            } => write!(f, "Vesting Info  {vesting_type}",),
+            Commands::VestingStatus { vesting_type } => {
+                write!(f, "Vesting Status  {vesting_type}",)
+            }
         }
     }
 }

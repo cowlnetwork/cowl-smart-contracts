@@ -1,18 +1,29 @@
+use casper_rust_wasm_sdk::deploy_watcher::watcher::EventParseResult;
+use casper_rust_wasm_sdk::helpers::motes_to_cspr;
 use casper_rust_wasm_sdk::rpcs::get_dictionary_item::DictionaryItemInput;
 use casper_rust_wasm_sdk::rpcs::query_global_state::{KeyIdentifierInput, QueryGlobalStateParams};
+use casper_rust_wasm_sdk::types::deploy_hash::DeployHash;
+use casper_rust_wasm_sdk::types::deploy_params::deploy_str_params::DeployStrParams;
 use casper_rust_wasm_sdk::types::deploy_params::dictionary_item_str_params::DictionaryItemStrParams;
+use casper_rust_wasm_sdk::types::deploy_params::payment_str_params::PaymentStrParams;
+use casper_rust_wasm_sdk::types::deploy_params::session_str_params::SessionStrParams;
 use casper_rust_wasm_sdk::types::public_key::PublicKey;
 use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
-    COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME, INSTALLER,
-    NAME_VESTING, RPC_ADDRESS,
+    CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
+    COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENT_ADDRESS, INSTALLER, NAME_VESTING, RPC_ADDRESS, TTL,
 };
-use cowl_vesting::constants::{PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME};
+use cowl_vesting::constants::{
+    ARG_VESTING_TYPE, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+};
+use cowl_vesting::enums::VestingType;
 use cowl_vesting::vesting::VestingData;
+use keys::format_base64_to_pem;
 use once_cell::sync::Lazy;
 use serde_json::{to_string, Value};
 use std::io::Write;
+use std::process;
 use std::{
     env,
     fs::File,
@@ -98,7 +109,7 @@ async fn get_contract_hash_keys(
         .find(|obj| obj["name"] == Value::String(contract_name.to_string()))
         .and_then(|obj| obj["key"].as_str())
         .unwrap_or_else(|| {
-            log::error!("Contract hash key not found in named_keys");
+            log::debug!("Contract hash key not found in named_keys");
             ""
         });
 
@@ -161,7 +172,7 @@ pub fn get_dictionary_item_params(
     DictionaryItemInput::Params(params)
 }
 
-pub fn stored_value_to_vesting_info<T>(json_string: &str) -> Option<T>
+pub fn stored_value_to_type<T>(json_string: &str) -> Option<T>
 where
     T: VestingData,
 {
@@ -200,4 +211,73 @@ where
         log::error!("Expected 'bytes' field to be a string in JSON.");
         None
     }
+}
+
+pub async fn call_vesting_entry_point(
+    contract_vesting_hash: &str,
+    entry_point: &str,
+    vesting_type: VestingType,
+) {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+    let deploy_params = DeployStrParams::new(
+        &CHAIN_NAME,
+        &key_pair.public_key_hex,
+        Some(format_base64_to_pem(&key_pair.private_key_base64.clone())),
+        None,
+        Some(TTL.to_string()),
+    );
+
+    let mut session_params = SessionStrParams::default();
+    session_params.set_session_hash(contract_vesting_hash);
+    session_params.set_session_entry_point(entry_point);
+    let args = Vec::from([format!("{ARG_VESTING_TYPE}:String='{vesting_type}'")]);
+    session_params.set_session_args(args);
+    let payment_params = PaymentStrParams::default();
+    payment_params.set_payment_amount(&COWL_VESTING_CALL_PAYMENT_AMOUNT);
+
+    let vesting_status_result = sdk()
+        .call_entrypoint(deploy_params, session_params, payment_params, None)
+        .await;
+
+    let deploy_hash = DeployHash::from(vesting_status_result.as_ref().unwrap().result.deploy_hash);
+    let deploy_hash_as_string = deploy_hash.to_string();
+
+    if deploy_hash_as_string.is_empty() {
+        log::error!("Failed to retrieve deploy hash");
+        process::exit(1)
+    }
+
+    log::info!(
+        "Wait deploy_hash for status entrypoint {}",
+        deploy_hash_as_string
+    );
+
+    let event_parse_result: EventParseResult = sdk()
+        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .await
+        .unwrap();
+
+    let motes = event_parse_result
+        .body
+        .unwrap()
+        .deploy_processed
+        .unwrap()
+        .execution_result
+        .success
+        .unwrap_or_else(|| {
+            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            process::exit(1)
+        })
+        .cost;
+
+    let cost = motes_to_cspr(&motes).unwrap();
+
+    let finalized_approvals = true;
+    let get_deploy = sdk()
+        .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
+        .await;
+    let get_deploy = get_deploy.unwrap();
+    let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
+    log::info!("Processed deploy hash {result}");
+    log::info!("Cost {cost} CSPR");
 }

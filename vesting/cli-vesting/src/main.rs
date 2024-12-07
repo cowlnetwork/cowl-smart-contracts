@@ -1,10 +1,5 @@
 use chrono::Local;
-use clap::Parser;
-use cli_vesting::{
-    cli::{Cli, Commands},
-    commands,
-    utils::config,
-};
+use cli_vesting::{cli, utils::config};
 use env_logger::Builder;
 use log::LevelFilter;
 use std::{fs::OpenOptions, io::Write, sync::Mutex};
@@ -17,37 +12,7 @@ async fn main() {
     // Initialize config
     config::init().await;
 
-    let cli = Cli::parse();
-
-    log::info!("Command executed: {}", cli.command);
-
-    match cli.command {
-        Commands::ListFundedAdresses => commands::addresses::print_funded_addresses().await,
-        Commands::DeployContracts { token, vesting } => {
-            let result = if token {
-                commands::deploy::deploy_cep18_token().await
-            } else if vesting {
-                commands::deploy::deploy_vesting_contract().await
-            } else {
-                commands::deploy::deploy_all_contracts().await
-            };
-
-            if let Err(e) = result {
-                log::error!("Error deploying contracts: {}", e);
-                std::process::exit(1);
-            }
-        }
-        Commands::VestingInfo { vesting_type } => {
-            commands::info::print_vesting_info(
-                vesting_type
-                    .as_str()
-                    .try_into()
-                    .expect("Failed to convert vesting type"),
-            )
-            .await
-        }
-        Commands::VestingStatus => commands::status::vesting_status(),
-    }
+    cli::run().await;
 }
 
 fn init_logger() {

@@ -86,15 +86,21 @@ pub extern "C" fn vesting_info() {
 // Check that some values are sent by token contract and return a TransferFilterContractResult
 #[no_mangle]
 pub extern "C" fn check_vesting_transfer() {
-    let _operator: Key = get_named_arg(ARG_OPERATOR);
-    let _from: Key = get_named_arg(ARG_FROM);
-    let _to: Key = get_named_arg(ARG_TO);
-    let _amount: U256 = get_named_arg(ARG_AMOUNT);
-    let _data: Option<Bytes> = get_named_arg(ARG_DATA);
+    let operator: Key = get_named_arg(ARG_OPERATOR);
+    let from: Key = get_named_arg(ARG_FROM);
+    let to: Key = get_named_arg(ARG_TO);
+    let amount: U256 = get_named_arg(ARG_AMOUNT);
+    let data: Option<Bytes> = get_named_arg(ARG_DATA);
 
-    let vesting_transfer = get_vesting_transfer(_from, _amount);
+    let vesting_transfer = get_vesting_transfer(from, amount);
 
-    record_event_dictionary(Event::CheckTransfer(CheckTransfer {}));
+    record_event_dictionary(Event::CheckTransfer(CheckTransfer {
+        operator,
+        from,
+        to,
+        amount,
+        data,
+    }));
 
     if vesting_transfer {
         ret(CLValue::from_t(TransferFilterContractResult::ProceedTransfer).unwrap_or_revert());

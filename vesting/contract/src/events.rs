@@ -7,7 +7,7 @@ use casper_contract::unwrap_or_revert::UnwrapOrRevert;
 use casper_event_standard::Event;
 #[cfg(feature = "contract-support")]
 use casper_event_standard::{emit, Schemas};
-use casper_types::Key;
+use casper_types::{bytesrepr::Bytes, Key, U256};
 #[cfg(feature = "contract-support")]
 use core::convert::TryFrom;
 
@@ -49,12 +49,24 @@ impl Upgrade {
     }
 }
 
-#[derive(Event, Debug, PartialEq, Eq, Default)]
-pub struct CheckTransfer {}
+#[derive(Event, Debug, PartialEq, Eq)]
+pub struct CheckTransfer {
+    pub operator: Key,
+    pub from: Key,
+    pub to: Key,
+    pub amount: U256,
+    pub data: Option<Bytes>,
+}
 
 impl CheckTransfer {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(operator: Key, from: Key, to: Key, amount: U256, data: Option<Bytes>) -> Self {
+        Self {
+            operator,
+            from,
+            to,
+            amount,
+            data,
+        }
     }
 }
 

@@ -1,10 +1,13 @@
 //! Contains definition of the entry points.
-use crate::constants::{
-    ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_DATA,
-    ARG_EVENTS_MODE, ARG_FROM, ARG_OPERATOR, ARG_TO, ARG_VESTING_TYPE, ENTRY_POINT_CHANGE_SECURITY,
-    ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE,
-    ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_UPGRADE, ENTRY_POINT_VESTING_INFO,
-    ENTRY_POINT_VESTING_STATUS, NONE_LIST,
+use crate::{
+    constants::{
+        ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_DATA,
+        ARG_EVENTS_MODE, ARG_FROM, ARG_OPERATOR, ARG_TO, ARG_VESTING_TYPE,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER,
+        ENTRY_POINT_COWL_CEP18_CONTRACT_PACKAGE, ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES,
+        ENTRY_POINT_UPGRADE, ENTRY_POINT_VESTING_INFO, ENTRY_POINT_VESTING_STATUS, NONE_LIST,
+    },
+    enums::TransferFilterContractResult,
 };
 use alloc::{boxed::Box, string::String, vec, vec::Vec};
 use casper_types::{
@@ -37,11 +40,7 @@ pub fn vesting_status() -> EntryPoint {
     EntryPoint::new(
         String::from(ENTRY_POINT_VESTING_STATUS),
         vec![Parameter::new(ARG_VESTING_TYPE, CLType::String)],
-        CLType::Tuple3([
-            Box::new(CLType::U256), // total_amount
-            Box::new(CLType::U256), // vested_amount
-            Box::new(CLType::Bool), // is_fully_vested
-        ]),
+        Bytes::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )
@@ -67,7 +66,7 @@ pub fn check_vesting_transfer() -> EntryPoint {
             Parameter::new(ARG_AMOUNT, CLType::U256),
             Parameter::new(ARG_DATA, CLType::Option(Box::new(Bytes::cl_type()))),
         ],
-        CLType::Any,
+        TransferFilterContractResult::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )

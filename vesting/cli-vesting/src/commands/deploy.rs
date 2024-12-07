@@ -176,7 +176,10 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         .unwrap()
         .execution_result
         .success
-        .unwrap()
+        .unwrap_or_else(|| {
+            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            process::exit(1)
+        })
         .cost;
 
     let cost = motes_to_cspr(&motes).unwrap();
