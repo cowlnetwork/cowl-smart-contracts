@@ -9,7 +9,7 @@ use casper_types::ApiError;
 /// return those via the [`Error::User`] variant or equivalently via the [`ApiError::User`]
 /// variant.
 #[repr(u16)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum VestingError {
     InsufficientRights = 1,
     UnexpectedKeyVariant = 2,
