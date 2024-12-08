@@ -10,9 +10,10 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
         let mut key_info_map: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
         for (vesting_type, (key_pair, _)) in config {
             let mut public_key_map = BTreeMap::new();
+
             public_key_map.insert(
                 "public_key_hex".to_string(),
-                key_pair.public_key_hex.clone(),
+                key_pair.public_key.to_string().clone(),
             );
             public_key_map.insert(
                 "account_hash".to_string(),

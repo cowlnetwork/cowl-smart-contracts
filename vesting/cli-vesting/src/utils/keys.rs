@@ -1,5 +1,5 @@
 use casper_rust_wasm_sdk::{helpers::public_key_from_secret_key, types::public_key::PublicKey};
-use cowl_vesting::vesting::VestingInfo;
+use cowl_vesting::{enums::VestingType, vesting::VestingInfo};
 use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -16,15 +16,9 @@ const END_PRIVATE_KEY: &str = "-----END PRIVATE KEY-----";
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KeyPair {
     #[serde(rename = "private")]
-    pub private_key_base64: String,
+    pub private_key_base64: Option<String>,
     #[serde(rename = "public")]
-    pub public_key_hex: String,
-    #[serde(default = "default_public_key")]
     pub public_key: PublicKey,
-}
-
-fn default_public_key() -> PublicKey {
-    PublicKey::new("013bf82b19cec318a992dee5c3956bb7252a4f3f65887fe1221128b6c48f68334a").unwrap()
 }
 
 pub async fn fetch_funded_keys() -> Result<Vec<KeyPair>, Box<dyn Error>> {
@@ -134,14 +128,34 @@ pub fn insert_config_info(
             return; // Key was successfully loaded from env or file
         }
 
-        // Insert the default key if no environment variable is found
+        // Insert the default key if no environment variable is found except if VestingType
+        let private_key_base64 = match VestingType::try_from(identifier) {
+            Ok(_vesting_type) => {
+                None // Return `None` because it's a Vesting Address
+            }
+            Err(_) => {
+                default_key.private_key_base64 // Use the private key
+            }
+        };
+
+        // Check for env/file-based public key if VestingType
+        let public_key = if VestingType::try_from(identifier).is_ok() {
+            // Attempt to fetch an inline public key from the environment
+            env::var(format!("PUBLIC_KEY_{}", identifier.to_uppercase()))
+                .ok()
+                .and_then(|key| PublicKey::new(&key).ok())
+                .map_or_else(|| default_key.public_key.to_string(), |key| key.to_string())
+        } else {
+            // Use the default key for non-VestingType identifiers
+            default_key.public_key.to_string()
+        };
+
         config_info.insert(
             identifier.to_string(),
             (
                 KeyPair {
-                    public_key_hex: default_key.public_key_hex.to_string(),
-                    private_key_base64: default_key.private_key_base64.to_string(),
-                    public_key: PublicKey::new(&default_key.public_key_hex).unwrap(),
+                    private_key_base64,
+                    public_key: PublicKey::new(&public_key).unwrap(),
                 },
                 vesting_info,
             ),
@@ -163,12 +177,12 @@ fn load_key_from_env_or_file(
                 .replace(END_PRIVATE_KEY, "")
                 .trim()
                 .to_string();
+
             config_info.insert(
                 identifier.to_string(),
                 (
                     KeyPair {
-                        public_key_hex: public_key_hex.clone(),
-                        private_key_base64: cleaned_private_key,
+                        private_key_base64: Some(cleaned_private_key),
                         public_key: PublicKey::new(&public_key_hex).unwrap(),
                     },
                     vesting_info.clone(),
@@ -179,20 +193,16 @@ fn load_key_from_env_or_file(
         false
     };
 
-    // Check for file-based private key
-    if let Ok(key_file_path) = env::var(format!("PATH_SECRET_KEY_{}", identifier.to_uppercase())) {
+    // Check for file-based private key in env
+    if let Ok(key_file_path) = env::var(format!("PATH_PRIVATE_KEY_{}", identifier.to_uppercase())) {
         if let Ok(private_key) = std::fs::read_to_string(&key_file_path) {
-            if try_insert(private_key) {
-                return true;
-            }
+            return try_insert(private_key);
         }
     }
 
-    // Check for inline private key
-    if let Ok(private_key) = env::var(format!("SECRET_KEY_{}", identifier.to_uppercase())) {
-        if try_insert(format_base64_to_pem(&private_key)) {
-            return true;
-        }
+    // Check for inline private key in env
+    if let Ok(private_key) = env::var(format!("PRIVATE_KEY_{}", identifier.to_uppercase())) {
+        return try_insert(private_key);
     }
 
     false

@@ -119,8 +119,10 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
 
     let deploy_params = DeployStrParams::new(
         &CHAIN_NAME,
-        &key_pair.public_key_hex,
-        Some(format_base64_to_pem(&key_pair.private_key_base64.clone())),
+        &key_pair.public_key.to_string(),
+        Some(format_base64_to_pem(
+            &key_pair.private_key_base64.unwrap().clone(),
+        )),
         None,
         Some(TTL.to_string()),
     );
@@ -254,8 +256,10 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
 
     let deploy_params = DeployStrParams::new(
         &CHAIN_NAME,
-        &key_pair.public_key_hex,
-        Some(format_base64_to_pem(&key_pair.private_key_base64.clone())),
+        &key_pair.public_key.to_string(),
+        Some(format_base64_to_pem(
+            &key_pair.private_key_base64.unwrap().clone(),
+        )),
         None,
         Some(TTL.to_string()),
     );
