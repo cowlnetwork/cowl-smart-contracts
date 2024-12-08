@@ -1,4 +1,5 @@
 use crate::commands;
+use casper_rust_wasm_sdk::types::{key::Key, public_key::PublicKey};
 use clap::{Parser, Subcommand};
 use std::fmt::{self, Display};
 
@@ -37,7 +38,9 @@ pub enum Commands {
     },
     Balance {
         #[clap(long)]
-        vesting_type: String,
+        vesting_type: Option<String>,
+        #[clap(long)]
+        key: Option<String>,
     },
 }
 
@@ -86,12 +89,21 @@ pub async fn run() {
             )
             .await
         }
-        Commands::Balance { vesting_type } => {
+        Commands::Balance { vesting_type, key } => {
             commands::balance::print_vesting_balance(
-                vesting_type
-                    .as_str()
-                    .try_into()
-                    .expect("Failed to convert vesting type"),
+                vesting_type.map(|f| {
+                    f.as_str()
+                        .try_into()
+                        .expect("Failed to convert vesting type")
+                }),
+                key.map(|formatted_str| {
+                    if let Ok(public_key) = PublicKey::new(&formatted_str) {
+                        Key::from_formatted_str(&public_key.to_account_hash().to_formatted_string())
+                            .expect("Failed to convert public key to key")
+                    } else {
+                        Key::from_formatted_str(&formatted_str).expect("Failed to convert key")
+                    }
+                }),
             )
             .await
         }
@@ -122,8 +134,14 @@ impl Display for Commands {
             Commands::VestingStatus { vesting_type } => {
                 write!(f, "Vesting Status for {vesting_type}",)
             }
-            Commands::Balance { vesting_type } => {
-                write!(f, "COWL Balance for {vesting_type}",)
+            Commands::Balance { vesting_type, key } => {
+                if let Some(vesting_type) = vesting_type {
+                    write!(f, "COWL Balance for {}", vesting_type)
+                } else if let Some(key) = key {
+                    write!(f, "COWL Balance for {}", key)
+                } else {
+                    write!(f, "COWL Balance: No vesting_type or key provided")
+                }
             }
         }
     }
