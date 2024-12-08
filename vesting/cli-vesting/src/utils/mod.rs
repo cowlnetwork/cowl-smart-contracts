@@ -172,7 +172,7 @@ pub fn get_dictionary_item_params(
     DictionaryItemInput::Params(params)
 }
 
-pub fn stored_value_to_type<T>(json_string: &str) -> Option<T>
+pub fn stored_value_to_vesting_data<T>(json_string: &str) -> Option<T>
 where
     T: VestingData,
 {
@@ -211,6 +211,25 @@ where
         log::error!("Expected 'bytes' field to be a string in JSON.");
         None
     }
+}
+
+pub fn stored_value_to_parsed_string(json_string: &str) -> Option<String> {
+    // Parse the JSON string
+    let parsed_json: Value = match serde_json::from_str(json_string) {
+        Ok(v) => v,
+        Err(_) => {
+            log::error!("Failed to parse JSON string.");
+            return None;
+        }
+    };
+
+    let parsed = &parsed_json["CLValue"]["parsed"];
+
+    // Try using the `parsed` field directly if it exists
+    if let Some(parsed_value) = parsed.as_str() {
+        return Some(parsed_value.to_string());
+    }
+    None
 }
 
 pub async fn call_vesting_entry_point(

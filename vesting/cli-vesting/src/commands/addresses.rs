@@ -12,7 +12,7 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
             let mut public_key_map = BTreeMap::new();
 
             public_key_map.insert(
-                "public_key_hex".to_string(),
+                "public_key".to_string(),
                 key_pair.public_key.to_string().clone(),
             );
             public_key_map.insert(

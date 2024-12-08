@@ -1,6 +1,6 @@
 use crate::utils::{
     call_vesting_entry_point, get_contract_vesting_hash_keys, get_dictionary_item_params, sdk,
-    stored_value_to_type,
+    stored_value_to_vesting_data,
 };
 use cowl_vesting::{
     constants::{DICT_VESTING_STATUS, ENTRY_POINT_VESTING_STATUS},
@@ -63,7 +63,7 @@ pub async fn vesting_status(
         }
     };
 
-    stored_value_to_type(&json_string)
+    stored_value_to_vesting_data(&json_string)
 }
 
 pub async fn print_vesting_status(vesting_type: VestingType, call_entry_point: bool) {

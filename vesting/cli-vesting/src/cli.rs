@@ -35,6 +35,10 @@ pub enum Commands {
         #[clap(long)]
         vesting_type: String,
     },
+    Balance {
+        #[clap(long)]
+        vesting_type: String,
+    },
 }
 
 pub async fn run() {
@@ -82,6 +86,15 @@ pub async fn run() {
             )
             .await
         }
+        Commands::Balance { vesting_type } => {
+            commands::balance::print_vesting_balance(
+                vesting_type
+                    .as_str()
+                    .try_into()
+                    .expect("Failed to convert vesting type"),
+            )
+            .await
+        }
     }
 }
 
@@ -105,9 +118,12 @@ impl Display for Commands {
             Commands::VestingInfo {
                 vesting_type,
                 call_entry_point: _,
-            } => write!(f, "Vesting Info  {vesting_type}",),
+            } => write!(f, "Vesting Info for {vesting_type}",),
             Commands::VestingStatus { vesting_type } => {
-                write!(f, "Vesting Status  {vesting_type}",)
+                write!(f, "Vesting Status for {vesting_type}",)
+            }
+            Commands::Balance { vesting_type } => {
+                write!(f, "COWL Balance for {vesting_type}",)
             }
         }
     }

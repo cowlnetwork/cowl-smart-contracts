@@ -11,7 +11,7 @@ use crate::{
 };
 #[cfg(feature = "contract-support")]
 use alloc::string::ToString;
-use alloc::{fmt, vec::Vec};
+use alloc::{fmt, string::String, vec::Vec};
 #[cfg(feature = "contract-support")]
 use casper_contract::{
     contract_api::runtime::{call_versioned_contract, get_blocktime, ret},
@@ -28,6 +28,20 @@ use time::Duration;
 
 pub trait VestingData: Sized {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error>;
+}
+
+impl VestingData for U256 {
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+        // Using fully qualified syntax to avoid conflicts
+        <U256 as FromBytes>::from_bytes(bytes)
+    }
+}
+
+impl VestingData for String {
+    fn from_bytes(value: &[u8]) -> Result<(Self, &[u8]), Error> {
+        // Using fully qualified syntax to avoid conflicts
+        <String as FromBytes>::from_bytes(value)
+    }
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -230,15 +244,16 @@ impl VestingStatus {
 
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), casper_types::bytesrepr::Error> {
         let (vesting_type, bytes) = VestingType::from_bytes(bytes)?;
-        let (total_amount, bytes) = U256::from_bytes(bytes)?;
-        let (vested_amount, bytes) = U256::from_bytes(bytes)?;
+        let (total_amount, bytes) = <casper_types::U256 as FromBytes>::from_bytes(bytes)?;
+        let (vested_amount, bytes) = <casper_types::U256 as FromBytes>::from_bytes(bytes)?;
         let (is_fully_vested, bytes) = bool::from_bytes(bytes)?;
         let (vesting_duration_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
         let (start_time_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
         let (time_until_next_release_ms, bytes) = u64::from_bytes(bytes)?; // Convert back from milliseconds
-        let (monthly_release_amount, bytes) = U256::from_bytes(bytes)?;
-        let (released_amount, bytes) = U256::from_bytes(bytes)?;
-        let (available_for_release_amount, bytes) = U256::from_bytes(bytes)?;
+        let (monthly_release_amount, bytes) = <casper_types::U256 as FromBytes>::from_bytes(bytes)?;
+        let (released_amount, bytes) = <casper_types::U256 as FromBytes>::from_bytes(bytes)?;
+        let (available_for_release_amount, bytes) =
+            <casper_types::U256 as FromBytes>::from_bytes(bytes)?;
 
         let vesting_duration = Duration::new(vesting_duration_ms as i64, 0);
         let start_time = Duration::new(start_time_ms as i64, 0);

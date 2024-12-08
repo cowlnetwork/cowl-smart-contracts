@@ -68,3 +68,5 @@ pub const FUNDED_KEYS_JSON_FILE_PATH: &str = "funded_keys.json";
 pub const INSTALLER: &str = "Installer";
 pub const USER_1: &str = "User_1";
 pub const USER_2: &str = "User_2";
+
+pub const DICT_BALANCES: &str = "balances";
