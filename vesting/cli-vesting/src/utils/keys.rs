@@ -212,7 +212,46 @@ pub fn format_base64_to_pem(private_key: &str) -> String {
     format!("{BEGIN_PRIVATE_KEY} {private_key} {END_PRIVATE_KEY}")
 }
 
-pub async fn get_private_key_base64(public_key: &PublicKey) -> Option<String> {
+fn prompt_base64_or_path(prompt_message: &str) -> String {
+    println!("{}", prompt_message);
+    println!("Enter the base64 key directly or specify the file path:");
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read input");
+    input.trim().to_string()
+}
+
+fn process_base64_or_path(input: String) -> String {
+    if std::fs::metadata(&input).is_ok() {
+        // Treat as file path and read content
+        std::fs::read_to_string(&input).expect("Failed to read file")
+    } else {
+        // Treat as direct base64 input
+        format_base64_to_pem(&input)
+    }
+}
+
+pub async fn retrieve_private_key(public_key: &PublicKey) -> Option<String> {
+    match get_private_key_base64(public_key).await {
+        Some(key) => Some(key),
+        None => {
+            let answer = prompt_base64_or_path(&format!(
+                "Missing private key for {}, do you want to provide a base64 string or a .pem file path?",
+                public_key
+            ));
+            let processed_key = process_base64_or_path(answer);
+            if processed_key.is_empty() {
+                log::warn!("No valid private key provided.");
+                None
+            } else {
+                Some(processed_key)
+            }
+        }
+    }
+}
+
+async fn get_private_key_base64(public_key: &PublicKey) -> Option<String> {
     let config_lock = CONFIG_LOCK.lock().await.clone().unwrap();
 
     for (_, (key_pair, _)) in config_lock.iter() {

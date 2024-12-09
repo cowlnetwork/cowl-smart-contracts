@@ -1,13 +1,12 @@
 use crate::utils::{
-    config::get_key_pair_from_vesting,
-    constants::{COWL_CEP_18_TOKEN_SYMBOL, DICT_BALANCES},
+    config::get_key_pair_from_vesting, constants::COWL_CEP_18_TOKEN_SYMBOL,
     get_contract_cep18_hash_keys, get_dictionary_item_params, sdk, stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
     helpers::{get_base64_key_from_account_hash, motes_to_cspr},
     types::key::Key,
 };
-use cowl_vesting::enums::VestingType;
+use cowl_vesting::{constants::DICT_BALANCES, enums::VestingType};
 use serde_json::to_string;
 
 pub async fn get_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) -> String {

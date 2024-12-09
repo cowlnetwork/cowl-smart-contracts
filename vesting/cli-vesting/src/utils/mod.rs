@@ -17,8 +17,9 @@ use constants::{
     INSTALLER, NAME_VESTING, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
-    ARG_AMOUNT, ARG_RECIPIENT, ARG_VESTING_TYPE, ENTRY_POINT_TRANSFER, PREFIX_CONTRACT_NAME,
-    PREFIX_CONTRACT_PACKAGE_NAME,
+    ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
+    ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_TRANSFER,
+    ENTRY_POINT_TRANSFER_FROM, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
 };
 use cowl_vesting::enums::VestingType;
 use cowl_vesting::vesting::VestingData;
@@ -73,26 +74,6 @@ pub fn prompt_yes_no(question: &str) -> bool {
             "n" | "no" => return false,
             _ => println!("Please answer with 'y' or 'n'"),
         }
-    }
-}
-
-pub fn prompt_base64_or_path(prompt_message: &str) -> String {
-    println!("{}", prompt_message);
-    println!("Enter the base64 key directly or specify the file path:");
-    let mut input = String::new();
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read input");
-    input.trim().to_string()
-}
-
-pub fn process_base64_or_path(input: String) -> String {
-    if std::fs::metadata(&input).is_ok() {
-        // Treat as file path and read content
-        std::fs::read_to_string(&input).expect("Failed to read file")
-    } else {
-        // Treat as direct base64 input
-        format_base64_to_pem(&input)
     }
 }
 
@@ -255,92 +236,14 @@ pub fn stored_value_to_parsed_string(json_string: &str) -> Option<String> {
     None
 }
 
-pub async fn call_vesting_entry_point(
-    contract_vesting_hash: &str,
+async fn execute_contract_entry_point(
+    contract_hash: &str,
     entry_point: &str,
-    vesting_type: VestingType,
-) {
-    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
-    let deploy_params = DeployStrParams::new(
-        &CHAIN_NAME,
-        &key_pair.public_key.to_string(),
-        Some(format_base64_to_pem(
-            &key_pair.private_key_base64.unwrap().clone(),
-        )),
-        None,
-        Some(TTL.to_string()),
-    );
-
-    let mut session_params = SessionStrParams::default();
-    session_params.set_session_hash(contract_vesting_hash);
-    session_params.set_session_entry_point(entry_point);
-    let args = Vec::from([format!("{ARG_VESTING_TYPE}:String='{vesting_type}'")]);
-    session_params.set_session_args(args);
-    let payment_params = PaymentStrParams::default();
-    payment_params.set_payment_amount(&COWL_VESTING_CALL_PAYMENT_AMOUNT);
-
-    let vesting_status_result = sdk()
-        .call_entrypoint(deploy_params, session_params, payment_params, None)
-        .await;
-
-    let deploy_hash = DeployHash::from(
-        vesting_status_result
-            .as_ref()
-            .expect("should have a deploy result")
-            .result
-            .deploy_hash,
-    );
-    let deploy_hash_as_string = deploy_hash.to_string();
-
-    if deploy_hash_as_string.is_empty() {
-        log::error!("Failed to retrieve deploy hash");
-        process::exit(1)
-    }
-
-    log::info!(
-        "Wait deploy_hash for status entrypoint {}",
-        deploy_hash_as_string
-    );
-
-    let event_parse_result: EventParseResult = sdk()
-        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
-        .await
-        .unwrap();
-
-    let motes = event_parse_result
-        .clone()
-        .body
-        .unwrap()
-        .deploy_processed
-        .unwrap()
-        .execution_result
-        .success
-        .unwrap_or_else(|| {
-            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
-            log::error!("{:?}", &event_parse_result);
-            process::exit(1)
-        })
-        .cost;
-
-    let cost = motes_to_cspr(&motes).unwrap();
-
-    let finalized_approvals = true;
-    let get_deploy = sdk()
-        .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
-        .await;
-    let get_deploy = get_deploy.unwrap();
-    let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
-    log::info!("Processed deploy hash {result}");
-    log::info!("Cost {cost} CSPR");
-}
-
-pub async fn call_token_transfer_entry_point(
-    contract_token_hash: &str,
+    args_json: &str,
+    payment_amount: &str,
     public_key: &PublicKey,
     secret_key: String,
-    to: &Key,
-    amount: String,
-) {
+) -> (String, String) {
     let deploy_params = DeployStrParams::new(
         &CHAIN_NAME,
         &public_key.to_string(),
@@ -350,32 +253,20 @@ pub async fn call_token_transfer_entry_point(
     );
 
     let session_params = SessionStrParams::default();
-    session_params.set_session_hash(contract_token_hash);
-    session_params.set_session_entry_point(ENTRY_POINT_TRANSFER);
+    session_params.set_session_hash(contract_hash);
+    session_params.set_session_entry_point(entry_point);
+    session_params.set_session_args_json(args_json);
 
-    let args = json!([
-        {
-            "name": ARG_RECIPIENT,
-            "type": "Key",
-            "value": to.to_formatted_string()
-        },
-        {
-            "name": ARG_AMOUNT,
-            "type": "U256",
-            "value": amount
-        },
-    ]);
-
-    session_params.set_session_args_json(&args.to_string());
     let payment_params = PaymentStrParams::default();
-    payment_params.set_payment_amount(&COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT);
+    payment_params.set_payment_amount(payment_amount);
 
-    let vesting_status_result = sdk()
+    // Call the entry point
+    let result = sdk()
         .call_entrypoint(deploy_params, session_params, payment_params, None)
         .await;
 
     let deploy_hash = DeployHash::from(
-        vesting_status_result
+        result
             .as_ref()
             .expect("should have a deploy hash")
             .result
@@ -388,15 +279,13 @@ pub async fn call_token_transfer_entry_point(
         process::exit(1)
     }
 
-    log::info!(
-        "Wait deploy_hash for transfer entrypoint {}",
-        deploy_hash_as_string
-    );
+    log::info!("Wait deploy_hash for entry point {}", deploy_hash_as_string);
 
     let event_parse_result: EventParseResult = sdk()
         .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
+
     let motes = event_parse_result
         .clone()
         .body
@@ -406,7 +295,7 @@ pub async fn call_token_transfer_entry_point(
         .execution_result
         .success
         .unwrap_or_else(|| {
-            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("Could not retrieve cost for deploy hash {deploy_hash_as_string}");
             log::error!("{:?}", &event_parse_result);
             process::exit(1)
         })
@@ -420,6 +309,117 @@ pub async fn call_token_transfer_entry_point(
         .await;
     let get_deploy = get_deploy.unwrap();
     let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
+
     log::info!("Processed deploy hash {result}");
     log::info!("Cost {cost} CSPR");
+
+    (result, cost)
+}
+
+pub async fn call_vesting_entry_point(
+    contract_vesting_hash: &str,
+    entry_point: &str,
+    vesting_type: VestingType,
+) {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+    let args = json!([
+        {
+            "name": ARG_VESTING_TYPE,
+            "type": "String",
+            "value": vesting_type.to_string()
+        },
+    ])
+    .to_string();
+
+    execute_contract_entry_point(
+        contract_vesting_hash,
+        entry_point,
+        &args,
+        &COWL_VESTING_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.unwrap()),
+    )
+    .await;
+}
+
+pub async fn call_token_transfer_entry_point(
+    contract_token_hash: &str,
+    public_key: &PublicKey,
+    secret_key: String,
+    from: Option<Key>,
+    to: &Key,
+    amount: String,
+) {
+    let mut args = json!([
+        {
+            "name": ARG_RECIPIENT,
+            "type": "Key",
+            "value": to.to_formatted_string()
+        },
+        {
+            "name": ARG_AMOUNT,
+            "type": "U256",
+            "value": amount
+        },
+    ]);
+
+    let entry_point = if let Some(from_key) = from {
+        args.as_array_mut().unwrap().push(serde_json::json!({
+            "name": ARG_OWNER,
+            "type": "Key",
+            "value": from_key.to_formatted_string()
+        }));
+        ENTRY_POINT_TRANSFER_FROM
+    } else {
+        ENTRY_POINT_TRANSFER
+    };
+
+    execute_contract_entry_point(
+        contract_token_hash,
+        entry_point,
+        &args.to_string(),
+        &COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
+        public_key,
+        secret_key,
+    )
+    .await;
+}
+
+pub async fn call_token_set_allowance_entry_point(
+    contract_token_hash: &str,
+    public_key: &PublicKey,
+    secret_key: String,
+    spender: &Key,
+    amount: String,
+    decrease: bool,
+) {
+    let args = json!([
+        {
+            "name": ARG_SPENDER,
+            "type": "Key",
+            "value": spender.to_formatted_string()
+        },
+        {
+            "name": ARG_AMOUNT,
+            "type": "U256",
+            "value": amount
+        },
+    ])
+    .to_string();
+
+    let entry_point = if decrease {
+        ENTRY_POINT_DECREASE_ALLOWANCE
+    } else {
+        ENTRY_POINT_INCREASE_ALLOWANCE
+    };
+
+    execute_contract_entry_point(
+        contract_token_hash,
+        entry_point,
+        &args,
+        &COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
+        public_key,
+        secret_key,
+    )
+    .await;
 }
