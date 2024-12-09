@@ -12,9 +12,9 @@ use casper_types::{runtime_args, ContractPackageHash, Key, RuntimeArgs, U256};
 use cowl_vesting::{
     constants::{
         ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
-        ARG_NAME, ARG_PACKAGE_HASH, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
-        ARG_TRANSFER_FILTER_METHOD, COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES,
-        DICT_SECURITY_BADGES, DICT_START_TIME, DICT_VESTING_AMOUNT, DICT_VESTING_STATUS,
+        ARG_NAME, ARG_PACKAGE_HASH, ARG_TOTAL_SUPPLY, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
+        ARG_TRANSFER_FILTER_METHOD, DICT_ADDRESSES, DICT_SECURITY_BADGES, DICT_START_TIME,
+        DICT_VESTING_AMOUNT, DICT_VESTING_STATUS,
     },
     enums::{EventsMode, VestingType, VESTING_INFO},
     vesting::VestingStatus,
@@ -39,7 +39,30 @@ fn should_install_contract() {
         .expect("should have cowl cep18 token contract");
 
     let named_keys = cowl_cep18_token_contract.named_keys();
+
+    assert!(
+        named_keys.contains_key(ARG_TOTAL_SUPPLY),
+        "{:?}",
+        named_keys
+    );
     // dbg!(named_keys);
+
+    let total_supply = builder
+        .query(
+            None,
+            cowl_cep18_token_contract_hash.into(),
+            &[ARG_TOTAL_SUPPLY.to_string()],
+        )
+        .unwrap()
+        .as_cl_value()
+        .unwrap()
+        .to_owned()
+        .into_t::<U256>()
+        .unwrap_or_default();
+
+    dbg!(total_supply);
+
+    assert!(total_supply > U256::zero());
 
     assert!(
         named_keys.contains_key(ARG_TRANSFER_FILTER_METHOD),
@@ -144,8 +167,7 @@ fn should_install_contract() {
         .sum();
 
     assert_eq!(
-        total_vested_amount,
-        COWL_CEP_18_TOKEN_TOTAL_SUPPLY.into(),
+        total_vested_amount, total_supply,
         "The total vested amount does not match the token total supply!"
     );
 }

@@ -14,7 +14,6 @@ pub const COWL_CEP18_TEST_TOKEN_CONTRACT_PACKAGE_NAME: &str =
 
 pub const ARG_SYMBOL: &str = "symbol";
 pub const ARG_DECIMALS: &str = "decimals";
-pub const ARG_TOTAL_SUPPLY: &str = "total_supply";
 
 pub const ACCOUNT_USER_1: [u8; 32] = [1u8; 32];
 pub const ACCOUNT_USER_2: [u8; 32] = [2u8; 32];

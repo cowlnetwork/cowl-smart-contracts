@@ -31,10 +31,11 @@ use cowl_vesting::{
         ARG_TRANSFER_FILTER_METHOD, ARG_UPGRADE_FLAG, ARG_VESTING_TYPE,
         COWL_CEP_18_TOKEN_TOTAL_SUPPLY, DICT_ADDRESSES, DICT_SECURITY_BADGES, DICT_START_TIME,
         DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT, DICT_VESTING_INFO, DICT_VESTING_STATUS,
-        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_INSTALL,
-        ENTRY_POINT_MINT, ENTRY_POINT_SET_TRANSFER_FILTER, ENTRY_POINT_TOTAL_SUPPLY,
-        ENTRY_POINT_TRANSFER, ENTRY_POINT_UPGRADE, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME,
-        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_CHECK_VESTING_TRANSFER, ENTRY_POINT_DECIMALS,
+        ENTRY_POINT_INSTALL, ENTRY_POINT_MINT, ENTRY_POINT_SET_TRANSFER_FILTER,
+        ENTRY_POINT_TOTAL_SUPPLY, ENTRY_POINT_TRANSFER, ENTRY_POINT_UPGRADE, MINTER_LIST,
+        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+        PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     enums::{EventsMode, TransferFilterContractResult, VestingType, VESTING_INFO},
@@ -458,7 +459,15 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
 
     let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
 
-    let total_supply = U256::from(COWL_CEP_18_TOKEN_TOTAL_SUPPLY);
+    // Get token decimal
+    let decimals = call_versioned_contract::<u8>(
+        cowl_cep18_contract_package_hash,
+        None,
+        ENTRY_POINT_DECIMALS,
+        runtime_args! {},
+    );
+
+    let total_supply = U256::from(COWL_CEP_18_TOKEN_TOTAL_SUPPLY * 10_u64.pow(decimals.into()));
 
     // Mint total supply
     call_versioned_contract::<()>(

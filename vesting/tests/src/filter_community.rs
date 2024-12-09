@@ -135,7 +135,7 @@ fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from(13);
+    let transfer_amount = U256::from_dec_str("12208269914").unwrap();
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -198,7 +198,7 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from(12);
+    let transfer_amount = U256::from_dec_str("12208269913").unwrap();
 
     cowl_cep18_token_transfer(
         &mut builder,
