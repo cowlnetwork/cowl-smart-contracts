@@ -1,3 +1,4 @@
+use super::balance::get_balance;
 use crate::utils::{
     call_token_transfer_entry_point, constants::COWL_CEP_18_TOKEN_SYMBOL,
     get_contract_cep18_hash_keys, keys::get_private_key_base64, process_base64_or_path,
@@ -8,13 +9,7 @@ use casper_rust_wasm_sdk::{
     types::{key::Key, public_key::PublicKey},
 };
 
-use super::balance::vesting_balance;
-
-pub async fn vesting_transfer(
-    from: Option<PublicKey>,
-    to: Option<Key>,
-    amount: String,
-) -> Option<String> {
+pub async fn transfer(from: Option<PublicKey>, to: Option<Key>, amount: String) -> Option<String> {
     let from = match from {
         Some(public_key) => public_key,
         None => {
@@ -31,7 +26,7 @@ pub async fn vesting_transfer(
         }
     };
 
-    // Retrieve contract vesting hash and package hash
+    // Retrieve contract token hash and package hash
     let (cowl_cep18_token_contract_hash, _) = match get_contract_cep18_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => {
@@ -80,16 +75,16 @@ pub async fn vesting_transfer(
     )
     .await;
 
-    let to_balance = vesting_balance(None, Some(to)).await;
+    let to_balance = get_balance(None, Some(to)).await;
     Some(to_balance)
 }
 
-pub async fn print_vesting_transfer(from: Option<PublicKey>, to: Option<Key>, amount: String) {
-    if let Some(vesting_balance) = vesting_transfer(from, to.clone(), amount).await {
+pub async fn print_transfer(from: Option<PublicKey>, to: Option<Key>, amount: String) {
+    if let Some(balance) = transfer(from, to.clone(), amount).await {
         log::info!("Balance for {}", to.unwrap().to_formatted_string());
         log::info!(
             "{} {}",
-            motes_to_cspr(&vesting_balance).unwrap(),
+            motes_to_cspr(&balance).unwrap(),
             *COWL_CEP_18_TOKEN_SYMBOL
         );
     }

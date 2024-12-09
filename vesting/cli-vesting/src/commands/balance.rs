@@ -10,10 +10,7 @@ use casper_rust_wasm_sdk::{
 use cowl_vesting::enums::VestingType;
 use serde_json::to_string;
 
-pub async fn vesting_balance(
-    vesting_type: Option<VestingType>,
-    vesting_key: Option<Key>,
-) -> String {
+pub async fn get_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) -> String {
     let dictionary_key = if let Some(vesting_type) = vesting_type {
         let key_pair = get_key_pair_from_vesting(&vesting_type.to_string())
             .await
@@ -50,7 +47,7 @@ pub async fn vesting_balance(
         return 0.to_string();
     };
 
-    // Retrieve contract vesting hash and package hash
+    // Retrieve contract token hash and package hash
     let (cowl_cep18_token_contract_hash, _) = match get_contract_cep18_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => {
@@ -59,23 +56,23 @@ pub async fn vesting_balance(
         }
     };
 
-    // Get the dictionary item parameters for the vesting balance
+    // Get the dictionary item parameters for the balance
     let dictionary_item = get_dictionary_item_params(
         &cowl_cep18_token_contract_hash.to_string(),
         DICT_BALANCES,
         &dictionary_key,
     );
 
-    // Query the contract dictionary for the vesting balance
-    let vesting_balance_result = sdk()
+    // Query the contract dictionary for the balance
+    let balance_result = sdk()
         .query_contract_dict("", dictionary_item, None, None)
         .await;
 
     // Handle query result and extract stored value
-    let stored_value = match vesting_balance_result {
+    let stored_value = match balance_result {
         Ok(result) => result.result.stored_value,
-        Err(_) => {
-            log::error!("Failed to query vesting balance from the contract.");
+        Err(err) => {
+            log::debug!("Failed to query balance from the contract.{}", err);
             return 0.to_string();
         }
     };
@@ -90,13 +87,20 @@ pub async fn vesting_balance(
     stored_value_to_parsed_string(&json_string).unwrap_or_default()
 }
 
-pub async fn print_vesting_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) {
-    let vesting_balance = vesting_balance(vesting_type, vesting_key.clone()).await;
+pub async fn print_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) {
+    let balance = get_balance(vesting_type, vesting_key.clone()).await;
 
-    log::info!("Balance for {}", vesting_type.unwrap().to_string());
+    let identifier = match vesting_type {
+        Some(vesting_type) => vesting_type.to_string(),
+        None => vesting_key
+            .map(|key| key.to_formatted_string())
+            .unwrap_or_else(|| "Failed to retrieve account hash".to_string()),
+    };
+
+    log::info!("Balance for {}", identifier);
     log::info!(
         "{} {}",
-        motes_to_cspr(&vesting_balance).unwrap(),
+        motes_to_cspr(&balance).unwrap(),
         *COWL_CEP_18_TOKEN_SYMBOL
     );
 }

@@ -1,4 +1,7 @@
-use crate::{commands, utils::constants::COWL_CEP_18_TOKEN_SYMBOL};
+use crate::{
+    commands,
+    utils::{config::get_key_pair_from_vesting, constants::COWL_CEP_18_TOKEN_SYMBOL},
+};
 use casper_rust_wasm_sdk::{
     helpers::motes_to_cspr,
     types::{key::Key, public_key::PublicKey},
@@ -80,7 +83,6 @@ pub enum Commands {
         )]
         key: Option<String>,
     },
-
     /// Transfer tokens between accounts or vesting types.
     #[command(
         name = "transfer",
@@ -103,6 +105,37 @@ pub enum Commands {
         #[arg(long, help = "The amount to transfer")]
         amount: String,
     },
+    Allowance {
+        #[arg(
+            long,
+            help = "The owner (vesting type or public key/account hash) of the allowance"
+        )]
+        owner: String,
+
+        /// Specify the destination (vesting type or public key).
+        #[arg(
+            long,
+            help = "The spender (vesting type or public key/account hash) of the allowance"
+        )]
+        spender: String,
+    },
+    // IncreaseAllowance {
+    //     /// Specify the source (vesting type or public key).
+    //     #[arg(
+    //         long,
+    //         help = "The source (vesting type or public key/account hash) to transfer from"
+    //     )]
+    //     from: String,
+
+    //     /// Specify the destination (vesting type or public key).
+    //     #[arg(
+    //         long,
+    //         help = "The destination (vesting type or public key/account hash) to transfer to"
+    //     )]
+    //     to: String,
+    //     #[arg(long, help = "The amount to transfer")]
+    //     amount: String,
+    // },
 }
 
 pub async fn run() {
@@ -151,7 +184,7 @@ pub async fn run() {
             .await
         }
         Commands::Balance { vesting_type, key } => {
-            commands::balance::print_vesting_balance(
+            commands::balance::print_balance(
                 vesting_type.map(|f| {
                     f.as_str()
                         .try_into()
@@ -162,12 +195,30 @@ pub async fn run() {
             .await
         }
         Commands::Transfer { from, to, amount } => {
-            commands::transfer::print_vesting_transfer(
+            commands::transfer::print_transfer(
                 Some(PublicKey::new(&from).expect("Failed to convert public key to key")),
                 Some(parse_key_from_formatted_str(&to)),
                 amount,
             )
             .await
+        }
+        Commands::Allowance { owner, spender } => {
+            // Retrieve the key pair for the owner
+            let owner_key = if let Some(key_pair) = get_key_pair_from_vesting(&owner).await {
+                Key::from_account(key_pair.public_key.to_account_hash())
+            } else {
+                parse_key_from_formatted_str(&owner)
+            };
+
+            // Retrieve the key pair for the spender
+            let spender_key = if let Some(key_pair) = get_key_pair_from_vesting(&spender).await {
+                Key::from_account(key_pair.public_key.to_account_hash())
+            } else {
+                parse_key_from_formatted_str(&spender)
+            };
+
+            // Call the print_allowance function
+            commands::allowance::print_allowance(&owner_key, &spender_key).await
         }
     }
 }
@@ -221,6 +272,13 @@ impl Display for Commands {
                     *COWL_CEP_18_TOKEN_SYMBOL,
                     from.clone(),
                     to.clone()
+                )
+            }
+            Commands::Allowance { owner, spender } => {
+                write!(
+                    f,
+                    "{} Allowance \nfrom {owner} \nto {spender}",
+                    *COWL_CEP_18_TOKEN_SYMBOL
                 )
             }
         }
