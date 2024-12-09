@@ -1,5 +1,8 @@
-use crate::commands;
-use casper_rust_wasm_sdk::types::{key::Key, public_key::PublicKey};
+use crate::{commands, utils::constants::COWL_CEP_18_TOKEN_SYMBOL};
+use casper_rust_wasm_sdk::{
+    helpers::motes_to_cspr,
+    types::{key::Key, public_key::PublicKey},
+};
 use clap::{Parser, Subcommand};
 use std::fmt::{self, Display};
 
@@ -15,32 +18,90 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    #[command(name = "list-addr")]
+    /// List funded addresses stored in the configuration.
+    #[command(name = "list-addr", about = "List all funded addresses")]
     ListFundedAdresses,
-    #[command(name = "deploy")]
+
+    /// Deploy smart contracts.
+    #[command(
+        name = "deploy",
+        about = "Deploy contracts for the token or vesting or both by default"
+    )]
     DeployContracts {
-        #[clap(long)]
-        token: bool, // Deploy only the token contract
-        #[clap(long)]
-        vesting: bool, // Deploy only the vesting contract
+        /// Deploy only the token contract.
+        #[arg(long, help = "Deploy only the token contract")]
+        token: bool,
+
+        /// Deploy only the vesting contract.
+        #[arg(long, help = "Deploy only the vesting contract")]
+        vesting: bool,
     },
-    #[command(name = "info")]
+
+    /// Retrieve vesting information.
+    #[command(
+        name = "info",
+        about = "Get base vesting information about a vesting type"
+    )]
     VestingInfo {
-        #[clap(long)]
+        /// Specify the vesting type (e.g., linear, cliff).
+        #[arg(long, help = "The vesting type to retrieve information for")]
         vesting_type: String,
-        #[clap(long)]
+
+        /// Call the entry point in the contract for more detailed information.
+        #[arg(long, help = "Call the contract's entry point before")]
         call_entry_point: bool,
     },
-    #[command(name = "status")]
+
+    /// Check the status of a vesting type.
+    #[command(name = "status", about = "Check the current status of a vesting type")]
     VestingStatus {
-        #[clap(long)]
+        /// Specify the vesting type (e.g., linear, cliff).
+        #[arg(
+            long,
+            help = "The vesting type to check the status for. Contract's entrypoint will be called before to update the value to retrieve."
+        )]
         vesting_type: String,
     },
+
+    /// Retrieve the balance of a vesting or public key.
+    #[command(
+        name = "balance",
+        about = "Retrieve the balance for a specific vesting type or key (Public key or Account hash)"
+    )]
     Balance {
-        #[clap(long)]
+        /// Specify the vesting type (optional).
+        #[arg(long, help = "The vesting type to retrieve the balance for")]
         vesting_type: Option<String>,
-        #[clap(long)]
+
+        /// Specify the public or account key (optional).
+        #[arg(
+            long,
+            help = "The public key or account hash to retrieve the balance for"
+        )]
         key: Option<String>,
+    },
+
+    /// Transfer tokens between accounts or vesting types.
+    #[command(
+        name = "transfer",
+        about = format!("Transfer {} tokens between accounts or vesting types", *COWL_CEP_18_TOKEN_SYMBOL)
+    )]
+    Transfer {
+        /// Specify the source (vesting type or public key).
+        #[arg(
+            long,
+            help = "The source (vesting type or public key/account hash) to transfer from"
+        )]
+        from: String,
+
+        /// Specify the destination (vesting type or public key).
+        #[arg(
+            long,
+            help = "The destination (vesting type or public key/account hash) to transfer to"
+        )]
+        to: String,
+        #[arg(long, help = "The amount to transfer")]
+        amount: String,
     },
 }
 
@@ -96,14 +157,15 @@ pub async fn run() {
                         .try_into()
                         .expect("Failed to convert vesting type")
                 }),
-                key.map(|formatted_str| {
-                    if let Ok(public_key) = PublicKey::new(&formatted_str) {
-                        Key::from_formatted_str(&public_key.to_account_hash().to_formatted_string())
-                            .expect("Failed to convert public key to key")
-                    } else {
-                        Key::from_formatted_str(&formatted_str).expect("Failed to convert key")
-                    }
-                }),
+                key.map(|formatted_str| parse_key_from_formatted_str(&formatted_str)),
+            )
+            .await
+        }
+        Commands::Transfer { from, to, amount } => {
+            commands::transfer::print_vesting_transfer(
+                Some(PublicKey::new(&from).expect("Failed to convert public key to key")),
+                Some(parse_key_from_formatted_str(&to)),
+                amount,
             )
             .await
         }
@@ -136,13 +198,40 @@ impl Display for Commands {
             }
             Commands::Balance { vesting_type, key } => {
                 if let Some(vesting_type) = vesting_type {
-                    write!(f, "COWL Balance for {}", vesting_type)
+                    write!(
+                        f,
+                        "{} Balance for {}",
+                        *COWL_CEP_18_TOKEN_SYMBOL, vesting_type
+                    )
                 } else if let Some(key) = key {
-                    write!(f, "COWL Balance for {}", key)
+                    write!(f, "{} Balance for {}", *COWL_CEP_18_TOKEN_SYMBOL, key)
                 } else {
-                    write!(f, "COWL Balance: No vesting_type or key provided")
+                    write!(
+                        f,
+                        "{} Balance: No vesting_type or key provided",
+                        *COWL_CEP_18_TOKEN_SYMBOL
+                    )
                 }
             }
+            Commands::Transfer { from, to, amount } => {
+                write!(
+                    f,
+                    "Transfer {} {} \nfrom {} \nto: {}",
+                    motes_to_cspr(amount).unwrap(),
+                    *COWL_CEP_18_TOKEN_SYMBOL,
+                    from.clone(),
+                    to.clone()
+                )
+            }
         }
+    }
+}
+
+fn parse_key_from_formatted_str(formatted_str: &str) -> Key {
+    if let Ok(public_key) = PublicKey::new(formatted_str) {
+        Key::from_formatted_str(&public_key.to_account_hash().to_formatted_string())
+            .expect("Failed to convert public key to key")
+    } else {
+        Key::from_formatted_str(formatted_str).expect("Failed to convert key")
     }
 }

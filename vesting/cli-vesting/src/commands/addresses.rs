@@ -50,7 +50,5 @@ pub async fn print_funded_addresses() {
     if let Some(key_info_map) = list_funded_addresses().await {
         let json_output = serde_json::to_string_pretty(&key_info_map).unwrap();
         log::info!("{}", json_output);
-    } else {
-        log::error!("Config is empty or not initialized");
     }
 }

@@ -3,7 +3,10 @@ use crate::utils::{
     constants::{COWL_CEP_18_TOKEN_SYMBOL, DICT_BALANCES},
     get_contract_cep18_hash_keys, get_dictionary_item_params, sdk, stored_value_to_parsed_string,
 };
-use casper_rust_wasm_sdk::{helpers::get_base64_key_from_account_hash, types::key::Key};
+use casper_rust_wasm_sdk::{
+    helpers::{get_base64_key_from_account_hash, motes_to_cspr},
+    types::key::Key,
+};
 use cowl_vesting::enums::VestingType;
 use serde_json::to_string;
 
@@ -20,7 +23,7 @@ pub async fn vesting_balance(
         )
         .unwrap_or_else(|err| {
             log::error!(
-                "Failed to retrieve dictionary_key for {}: {:?}",
+                "Failed to retrieve account_hash for {}: {:?}",
                 vesting_type,
                 err
             );
@@ -36,7 +39,7 @@ pub async fn vesting_balance(
         )
         .unwrap_or_else(|err| {
             log::error!(
-                "Failed to retrieve dictionary_key for {}: {:?}",
+                "Failed to retrieve account_hash for {}: {:?}",
                 vesting_key.to_formatted_string(),
                 err
             );
@@ -90,10 +93,10 @@ pub async fn vesting_balance(
 pub async fn print_vesting_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) {
     let vesting_balance = vesting_balance(vesting_type, vesting_key.clone()).await;
 
-    if vesting_balance.is_empty() {
-        log::error!("Config is empty or not initialized");
-        return;
-    }
-
-    log::info!("{vesting_balance} {}", COWL_CEP_18_TOKEN_SYMBOL.to_string());
+    log::info!("Balance for {}", vesting_type.unwrap().to_string());
+    log::info!(
+        "{} {}",
+        motes_to_cspr(&vesting_balance).unwrap(),
+        *COWL_CEP_18_TOKEN_SYMBOL
+    );
 }

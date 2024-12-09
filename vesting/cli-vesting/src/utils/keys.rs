@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, env, error::Error, fs, path::Path};
 
 use super::{
-    config::ConfigInfo,
+    config::{ConfigInfo, CONFIG_LOCK},
     constants::{FUNDED_KEYS_JSON_FILE_PATH, FUNDED_KEYS_URL},
 };
 
@@ -210,4 +210,18 @@ fn load_key_from_env_or_file(
 
 pub fn format_base64_to_pem(private_key: &str) -> String {
     format!("{BEGIN_PRIVATE_KEY} {private_key} {END_PRIVATE_KEY}")
+}
+
+pub async fn get_private_key_base64(public_key: &PublicKey) -> Option<String> {
+    let config_lock = CONFIG_LOCK.lock().await.clone().unwrap();
+
+    for (_, (key_pair, _)) in config_lock.iter() {
+        if &key_pair.public_key == public_key {
+            return key_pair
+                .private_key_base64
+                .as_ref()
+                .map(|base64_key| format_base64_to_pem(&base64_key.clone()));
+        }
+    }
+    None
 }

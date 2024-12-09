@@ -7,21 +7,24 @@ use casper_rust_wasm_sdk::types::deploy_params::deploy_str_params::DeployStrPara
 use casper_rust_wasm_sdk::types::deploy_params::dictionary_item_str_params::DictionaryItemStrParams;
 use casper_rust_wasm_sdk::types::deploy_params::payment_str_params::PaymentStrParams;
 use casper_rust_wasm_sdk::types::deploy_params::session_str_params::SessionStrParams;
+use casper_rust_wasm_sdk::types::key::Key;
 use casper_rust_wasm_sdk::types::public_key::PublicKey;
 use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
-    COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENT_ADDRESS, INSTALLER, NAME_VESTING, RPC_ADDRESS, TTL,
+    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENT_ADDRESS,
+    INSTALLER, NAME_VESTING, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
-    ARG_VESTING_TYPE, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+    ARG_AMOUNT, ARG_RECIPIENT, ARG_VESTING_TYPE, ENTRY_POINT_TRANSFER, PREFIX_CONTRACT_NAME,
+    PREFIX_CONTRACT_PACKAGE_NAME,
 };
 use cowl_vesting::enums::VestingType;
 use cowl_vesting::vesting::VestingData;
 use keys::format_base64_to_pem;
 use once_cell::sync::Lazy;
-use serde_json::{to_string, Value};
+use serde_json::{json, to_string, Value};
 use std::io::Write;
 use std::process;
 use std::{
@@ -70,6 +73,26 @@ pub fn prompt_yes_no(question: &str) -> bool {
             "n" | "no" => return false,
             _ => println!("Please answer with 'y' or 'n'"),
         }
+    }
+}
+
+pub fn prompt_base64_or_path(prompt_message: &str) -> String {
+    println!("{}", prompt_message);
+    println!("Enter the base64 key directly or specify the file path:");
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read input");
+    input.trim().to_string()
+}
+
+pub fn process_base64_or_path(input: String) -> String {
+    if std::fs::metadata(&input).is_ok() {
+        // Treat as file path and read content
+        std::fs::read_to_string(&input).expect("Failed to read file")
+    } else {
+        // Treat as direct base64 input
+        format_base64_to_pem(&input)
     }
 }
 
@@ -142,8 +165,8 @@ pub async fn get_contract_cep18_hash_keys() -> Option<(String, String)> {
         .public_key;
     get_contract_hash_keys(
         &public_key,
-        &COWL_CEP18_TOKEN_CONTRACT_HASH_NAME.to_string(),
-        &COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME.to_string(),
+        &COWL_CEP18_TOKEN_CONTRACT_HASH_NAME,
+        &COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
     )
     .await
 }
@@ -260,7 +283,13 @@ pub async fn call_vesting_entry_point(
         .call_entrypoint(deploy_params, session_params, payment_params, None)
         .await;
 
-    let deploy_hash = DeployHash::from(vesting_status_result.as_ref().unwrap().result.deploy_hash);
+    let deploy_hash = DeployHash::from(
+        vesting_status_result
+            .as_ref()
+            .expect("should have a deploy result")
+            .result
+            .deploy_hash,
+    );
     let deploy_hash_as_string = deploy_hash.to_string();
 
     if deploy_hash_as_string.is_empty() {
@@ -279,6 +308,7 @@ pub async fn call_vesting_entry_point(
         .unwrap();
 
     let motes = event_parse_result
+        .clone()
         .body
         .unwrap()
         .deploy_processed
@@ -287,6 +317,97 @@ pub async fn call_vesting_entry_point(
         .success
         .unwrap_or_else(|| {
             log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("{:?}", &event_parse_result);
+            process::exit(1)
+        })
+        .cost;
+
+    let cost = motes_to_cspr(&motes).unwrap();
+
+    let finalized_approvals = true;
+    let get_deploy = sdk()
+        .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
+        .await;
+    let get_deploy = get_deploy.unwrap();
+    let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
+    log::info!("Processed deploy hash {result}");
+    log::info!("Cost {cost} CSPR");
+}
+
+pub async fn call_token_transfer_entry_point(
+    contract_token_hash: &str,
+    public_key: &PublicKey,
+    secret_key: String,
+    to: &Key,
+    amount: String,
+) {
+    let deploy_params = DeployStrParams::new(
+        &CHAIN_NAME,
+        &public_key.to_string(),
+        Some(secret_key),
+        None,
+        Some(TTL.to_string()),
+    );
+
+    let session_params = SessionStrParams::default();
+    session_params.set_session_hash(contract_token_hash);
+    session_params.set_session_entry_point(ENTRY_POINT_TRANSFER);
+
+    let args = json!([
+        {
+            "name": ARG_RECIPIENT,
+            "type": "Key",
+            "value": to.to_formatted_string()
+        },
+        {
+            "name": ARG_AMOUNT,
+            "type": "U256",
+            "value": amount
+        },
+    ]);
+
+    session_params.set_session_args_json(&args.to_string());
+    let payment_params = PaymentStrParams::default();
+    payment_params.set_payment_amount(&COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT);
+
+    let vesting_status_result = sdk()
+        .call_entrypoint(deploy_params, session_params, payment_params, None)
+        .await;
+
+    let deploy_hash = DeployHash::from(
+        vesting_status_result
+            .as_ref()
+            .expect("should have a deploy hash")
+            .result
+            .deploy_hash,
+    );
+    let deploy_hash_as_string = deploy_hash.to_string();
+
+    if deploy_hash_as_string.is_empty() {
+        log::error!("Failed to retrieve deploy hash");
+        process::exit(1)
+    }
+
+    log::info!(
+        "Wait deploy_hash for transfer entrypoint {}",
+        deploy_hash_as_string
+    );
+
+    let event_parse_result: EventParseResult = sdk()
+        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .await
+        .unwrap();
+    let motes = event_parse_result
+        .clone()
+        .body
+        .unwrap()
+        .deploy_processed
+        .unwrap()
+        .execution_result
+        .success
+        .unwrap_or_else(|| {
+            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("{:?}", &event_parse_result);
             process::exit(1)
         })
         .cost;

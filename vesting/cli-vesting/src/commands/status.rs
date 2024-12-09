@@ -70,7 +70,5 @@ pub async fn print_vesting_status(vesting_type: VestingType, call_entry_point: b
     if let Some(vesting_status) = vesting_status(vesting_type, call_entry_point).await {
         let json_output = serde_json::to_string_pretty(&vesting_status.to_string()).unwrap();
         log::info!("{}", json_output);
-    } else {
-        log::error!("Config is empty or not initialized");
     }
 }

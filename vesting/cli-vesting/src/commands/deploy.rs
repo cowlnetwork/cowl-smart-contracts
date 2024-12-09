@@ -38,12 +38,12 @@ static ARGS_CEP18_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
         {
             "name": ARG_NAME,
             "type": "String",
-            "value": &COWL_CEP_18_TOKEN_NAME.to_string()
+            "value": *COWL_CEP_18_TOKEN_NAME
         },
         {
             "name": ARG_SYMBOL,
             "type": "String",
-            "value": &COWL_CEP_18_TOKEN_SYMBOL.to_string()
+            "value": *COWL_CEP_18_TOKEN_SYMBOL
         },
         {
             "name": ARG_DECIMALS,
@@ -73,7 +73,7 @@ static ARGS_VESTING_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
         {
             "name": ARG_NAME,
             "type": "String",
-            "value": &NAME_VESTING.to_string()
+            "value": *NAME_VESTING
         },
     ]))
 });
@@ -153,7 +153,13 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         process::exit(1)
     }
 
-    let deploy_hash = DeployHash::from(install.as_ref().unwrap().result.deploy_hash);
+    let deploy_hash = DeployHash::from(
+        install
+            .as_ref()
+            .expect("should have a deploy hash")
+            .result
+            .deploy_hash,
+    );
     let deploy_hash_as_string = deploy_hash.to_string();
 
     if deploy_hash_as_string.is_empty() {
@@ -172,6 +178,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         .unwrap();
 
     let motes = event_parse_result
+        .clone()
         .body
         .unwrap()
         .deploy_processed
@@ -180,6 +187,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         .success
         .unwrap_or_else(|| {
             log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("{:?}", &event_parse_result);
             process::exit(1)
         })
         .cost;
@@ -316,7 +324,13 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         process::exit(1)
     }
 
-    let deploy_hash = DeployHash::from(install.as_ref().unwrap().result.deploy_hash);
+    let deploy_hash = DeployHash::from(
+        install
+            .as_ref()
+            .expect("should have a deploy hash")
+            .result
+            .deploy_hash,
+    );
     let deploy_hash_as_string = deploy_hash.to_string();
 
     if deploy_hash_as_string.is_empty() {
@@ -333,13 +347,18 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         .await
         .unwrap();
     let motes = event_parse_result
+        .clone()
         .body
         .unwrap()
         .deploy_processed
         .unwrap()
         .execution_result
         .success
-        .unwrap()
+        .unwrap_or_else(|| {
+            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("{:?}", &event_parse_result);
+            process::exit(1)
+        })
         .cost;
 
     let cost = motes_to_cspr(&motes).unwrap();
