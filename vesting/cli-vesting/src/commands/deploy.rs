@@ -298,6 +298,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
                 }
             }
         }
+        drop(config_lock);
         if let Some(array) = args_vesting_json.as_array_mut() {
             array.push(json!({
                 "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,

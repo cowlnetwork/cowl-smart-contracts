@@ -6,15 +6,15 @@ const DEFAULT_RPC_ADDRESS: &str = "http://127.0.0.1:7777";
 const DEFAULT_EVENT_ADDRESS: &str = "http://127.0.0.1:9999/events/main";
 const DEFAULT_CHAIN_NAME: &str = "casper-net-1";
 const DEFAULT_TTL: &str = "30m";
-pub const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000"; // 300 CSPR
-pub const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "test";
-pub const DEFAULT_COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
+const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000"; // 300 CSPR
+const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "test";
+const DEFAULT_COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
 pub const DEFAULT_COWL_CEP_18_TOKEN_DECIMALS: u8 = 9;
-pub const DEFAULT_NAME_CEP18: &str = "cowl_cep18";
-pub const DEFAULT_NAME_VESTING: &str = "cowl_vesting";
+const DEFAULT_NAME_CEP18: &str = "cowl_cep18";
+const DEFAULT_NAME_VESTING: &str = "cowl_vesting";
 
-pub const DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT: &str = "350000000"; // 0.35 CSPR
-pub const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1500000000"; // 1.5 CSPR
+const DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT: &str = "350000000"; // 0.35 CSPR
+const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1500000000"; // 1.5 CSPR
 
 pub static RPC_ADDRESS: Lazy<String> =
     Lazy::new(|| env::var("RPC_ADDRESS").unwrap_or_else(|_| DEFAULT_RPC_ADDRESS.to_string()));

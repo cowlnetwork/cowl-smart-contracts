@@ -56,10 +56,13 @@ pub async fn init() {
 }
 
 pub async fn get_key_pair_from_vesting(identifier: &str) -> Option<KeyPair> {
-    // Lock the global CONFIG_LOCK
-    let config_lock = CONFIG_LOCK.lock().await;
+    // Acquire the lock and clone info
+    let cloned_config = {
+        let config_lock = CONFIG_LOCK.lock().await;
+        config_lock.clone()
+    };
     // Access the underlying ConfigInfo if available
-    if let Some(ref config_info) = *config_lock {
+    if let Some(ref config_info) = cloned_config {
         // Look up the KeyVestingInfoPair by vesting_type
         if let Some((key_pair, _)) = config_info.get(identifier) {
             return Some(key_pair.clone());

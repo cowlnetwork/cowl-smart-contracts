@@ -1,12 +1,19 @@
-use crate::utils::{config::CONFIG_LOCK, sdk};
-use casper_rust_wasm_sdk::{helpers::motes_to_cspr, types::purse_identifier::PurseIdentifier};
+use super::balance::get_balance;
+use crate::utils::{config::CONFIG_LOCK, constants::COWL_CEP_18_TOKEN_SYMBOL, sdk};
+use casper_rust_wasm_sdk::{
+    helpers::motes_to_cspr,
+    types::{key::Key, purse_identifier::PurseIdentifier},
+};
 use std::collections::BTreeMap;
 
 pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String, String>>> {
-    // Acquire the lock
-    let config_lock = CONFIG_LOCK.lock().await;
+    // Acquire the lock and clone info
+    let cloned_config = {
+        let config_lock = CONFIG_LOCK.lock().await;
+        config_lock.clone()
+    };
 
-    if let Some(config) = config_lock.as_ref() {
+    if let Some(config) = cloned_config.as_ref() {
         let mut key_info_map: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
         for (vesting_type, (key_pair, _)) in config {
             let mut public_key_map = BTreeMap::new();
@@ -35,7 +42,20 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
                 .balance;
             let balance = motes_to_cspr(&balance_motes.to_string()).unwrap();
 
-            public_key_map.insert("balance CSPR".to_string(), balance.to_string());
+            public_key_map.insert("balance_CSPR".to_string(), balance.to_string());
+
+            let balance_token = get_balance(
+                None,
+                Some(Key::from_account(
+                    key_pair.public_key.clone().to_account_hash(),
+                )),
+            )
+            .await;
+
+            public_key_map.insert(
+                format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
+                motes_to_cspr(&balance_token.to_string()).unwrap(),
+            );
 
             key_info_map.insert(vesting_type.to_string(), public_key_map);
         }

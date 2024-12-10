@@ -9,8 +9,11 @@ use casper_rust_wasm_sdk::{
 use cowl_vesting::{constants::DICT_BALANCES, enums::VestingType};
 use serde_json::to_string;
 
-pub async fn get_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) -> String {
-    let dictionary_key = if let Some(vesting_type) = vesting_type {
+pub async fn get_balance(
+    maybe_vesting_type: Option<VestingType>,
+    maybe_key: Option<Key>,
+) -> String {
+    let dictionary_key = if let Some(vesting_type) = maybe_vesting_type {
         let key_pair = get_key_pair_from_vesting(&vesting_type.to_string())
             .await
             .unwrap();
@@ -25,22 +28,16 @@ pub async fn get_balance(vesting_type: Option<VestingType>, vesting_key: Option<
             );
             0.to_string()
         })
-    } else if let Some(vesting_key) = vesting_key {
-        get_base64_key_from_account_hash(
-            &vesting_key
-                .clone()
-                .into_account()
-                .unwrap()
-                .to_formatted_string(),
-        )
-        .unwrap_or_else(|err| {
-            log::error!(
-                "Failed to retrieve account_hash for {}: {:?}",
-                vesting_key.to_formatted_string(),
-                err
-            );
-            0.to_string()
-        })
+    } else if let Some(key) = maybe_key {
+        get_base64_key_from_account_hash(&key.clone().into_account().unwrap().to_formatted_string())
+            .unwrap_or_else(|err| {
+                log::error!(
+                    "Failed to retrieve account_hash for {}: {:?}",
+                    key.to_formatted_string(),
+                    err
+                );
+                0.to_string()
+            })
     } else {
         log::error!("Both vesting_type and vesting_key are missing.");
         return 0.to_string();
