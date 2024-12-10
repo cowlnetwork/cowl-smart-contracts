@@ -12,6 +12,7 @@ use casper_types::{
     CLType, CLTyped,
 };
 use serde::{Deserialize, Serialize};
+use strum::EnumIter;
 use time::Duration;
 
 #[repr(u8)]
@@ -36,7 +37,7 @@ impl TryFrom<u8> for EventsMode {
 
 #[repr(C)]
 #[non_exhaustive]
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug, Copy)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug, Copy, EnumIter)]
 pub enum VestingType {
     Treasury = 0,
     Contributor = 1,

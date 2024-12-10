@@ -14,7 +14,7 @@ pub const DEFAULT_NAME_CEP18: &str = "cowl_cep18";
 pub const DEFAULT_NAME_VESTING: &str = "cowl_vesting";
 
 pub const DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT: &str = "350000000"; // 0.35 CSPR
-pub const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1300000000"; // 1.3 CSPR
+pub const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1500000000"; // 1.5 CSPR
 
 pub static RPC_ADDRESS: Lazy<String> =
     Lazy::new(|| env::var("RPC_ADDRESS").unwrap_or_else(|_| DEFAULT_RPC_ADDRESS.to_string()));

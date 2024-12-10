@@ -10,8 +10,6 @@ use casper_rust_wasm_sdk::{
 use cowl_vesting::constants::DICT_ALLOWANCES;
 use serde_json::to_string;
 
-use super::balance::get_balance;
-
 pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
     // Retrieve contract token hash and package hash
     let (cowl_cep18_token_contract_hash, _) = match get_contract_cep18_hash_keys().await {
@@ -107,8 +105,8 @@ pub async fn set_allowance(
     )
     .await;
 
-    let to_balance = get_balance(None, Some(spender.clone())).await;
-    Some(to_balance)
+    let to_allowance = get_allowance(&Key::from_account(owner.to_account_hash()), spender).await;
+    Some(to_allowance)
 }
 
 pub async fn print_increase_allowance(owner: &PublicKey, spender: &Key, amount: String) {

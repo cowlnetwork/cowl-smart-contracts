@@ -13,6 +13,8 @@ serde = { version = "1.0", default-features = false, features = [
   "derive",
   "alloc",
 ] }
+strum = { version = "*", default-features = false, features = ["derive"] }
+strum_macros = "*"
 
 [[bin]]
 name = "cowl_vesting"
