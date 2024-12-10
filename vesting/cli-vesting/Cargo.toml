@@ -12,7 +12,10 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 regex = "*"
 once_cell = "*"
-tokio = { version = "*", optional = true, features = ["macros"] }
+tokio = { version = "*", optional = true, default-features = false, features = [
+  "macros",
+  "sync",
+] }
 dotenvy = "*"
 hex = "*"
 log = "*"

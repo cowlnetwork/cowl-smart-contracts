@@ -248,7 +248,7 @@ fn should_prevent_reinstall_contract() {
     ];
 
     for (address_key, account_key) in accounts {
-        let _ = install_args.insert(address_key.to_string(), Key::from(account_key));
+        let _ = install_args.insert(address_key.to_string(), account_key);
     }
 
     // Install vesting contract with token
