@@ -2,7 +2,11 @@ use chrono::Local;
 use cli_vesting::{cli, utils::config};
 use env_logger::Builder;
 use log::LevelFilter;
-use std::{fs::OpenOptions, io::Write, sync::Mutex};
+use std::{
+    fs::OpenOptions,
+    io::{stdout, Write},
+    sync::Mutex,
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -27,7 +31,7 @@ fn init_logger() {
 
     Builder::new()
         .filter(None, LevelFilter::Info)
-        .format(move |buf, record| {
+        .format(move |_, record| {
             // Lock the log file for writing
             let mut log_file = log_file.lock().unwrap();
 
@@ -40,7 +44,7 @@ fn init_logger() {
                 .expect("Failed to write log");
 
             // Also write to the default logger output (stdout by default)
-            writeln!(buf, "{}", log_message.trim_end())
+            writeln!(stdout(), "{}", log_message.trim_end())
         })
         .init();
 }

@@ -19,6 +19,12 @@ log = "*"
 env_logger = "*"
 chrono = "*"
 
+[dev-dependencies]
+assert_cmd = "*"
+predicates = "*"
+tempfile = "*"
+tokio = { version = "1.0", features = ["full"] }
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 name = "cli_vesting"
@@ -32,6 +38,10 @@ doc = false
 [features]
 default = ["tokio", "std-fs-io"]
 std-fs-io = []
+
+[[test]]
+name = "tests"
+path = "tests/integration.rs"
 
 [patch.crates-io]
 casper-types = { version = "4.0.1", git = "https://github.com/casper-network/casper-node", branch = "dev" }
