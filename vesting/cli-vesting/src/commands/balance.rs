@@ -61,7 +61,7 @@ pub async fn get_balance(
 
     // Query the contract dictionary for the balance
     let balance_result = sdk()
-        .query_contract_dict("", dictionary_item, None, None)
+        .query_contract_dict(dictionary_item, None::<&str>, None, None)
         .await;
 
     // Handle query result and extract stored value

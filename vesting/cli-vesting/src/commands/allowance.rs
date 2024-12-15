@@ -20,7 +20,7 @@ pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
         }
     };
 
-    let dictionary_key = make_dictionary_item_key(owner.clone(), &spender);
+    let dictionary_key = make_dictionary_item_key(&owner, &spender);
 
     // Get the dictionary item parameters for the allowance
     let dictionary_item = get_dictionary_item_params(
@@ -31,7 +31,7 @@ pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
 
     // Query the contract dictionary for the allowance
     let allowance_result = sdk()
-        .query_contract_dict("", dictionary_item, None, None)
+        .query_contract_dict(dictionary_item, None::<&str>, None, None)
         .await;
 
     // Handle query result and extract stored value
