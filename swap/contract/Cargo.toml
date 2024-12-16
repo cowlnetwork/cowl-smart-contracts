@@ -1,0 +1,32 @@
+[package]
+name = "cowl-swap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+casper-contract = { version = "4.0.0", optional = true }
+casper-types = "4.0.1"
+casper-event-standard = { version = "0.5.0", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+# time = { version = "0.3.37", default-features = false, features = ["alloc"] }
+serde = { version = "1.0", default-features = false, features = [
+  "derive",
+  "alloc",
+] }
+# strum = { version = "*", default-features = false, features = ["derive"] }
+# strum_macros = "*"
+
+[[bin]]
+name = "cowl_swap"
+path = "src/main.rs"
+bench = false
+doctest = false
+test = false
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+[features]
+default = ["contract-support"]
+contract-support = ["dep:casper-contract"]

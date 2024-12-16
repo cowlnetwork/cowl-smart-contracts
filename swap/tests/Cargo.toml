@@ -1,0 +1,16 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+cowl-swap = { path = "../contract", default-features = false }
+casper-engine-test-support = { version = "7.0.3", features = ["test-support"] }
+casper-execution-engine = "7.0.3"
+casper-types = "4.0.1"
+casper-event-standard = { version = "0.5.0", default-features = false }
+
+[lib]
+name = "tests"
+bench = false
+doctest = false
