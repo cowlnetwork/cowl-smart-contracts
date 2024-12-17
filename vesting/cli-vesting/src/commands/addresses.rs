@@ -41,7 +41,16 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
             let balance_motes = if let Ok(balance_motes) = maybe_balance_motes {
                 balance_motes.result.balance.to_string()
             } else {
-                log::warn!("{vesting_type} {:?} has no CSPR balance", key_pair);
+                log::warn!(
+                    "No CSPR balance for {}\n\
+                    - Private Key: {:?}\n\
+                    - Public Key: {}\n\
+                    - Account Hash: {}",
+                    vesting_type,
+                    key_pair.private_key_base64,
+                    key_pair.public_key.to_string(),
+                    key_pair.public_key.to_account_hash().to_formatted_string()
+                );
                 "0".to_string()
             };
             let balance = motes_to_cspr(&balance_motes).unwrap();

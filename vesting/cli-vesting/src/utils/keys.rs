@@ -1,4 +1,7 @@
-use casper_rust_wasm_sdk::{helpers::public_key_from_secret_key, types::public_key::PublicKey};
+use casper_rust_wasm_sdk::{
+    helpers::public_key_from_secret_key,
+    types::{key::Key, public_key::PublicKey},
+};
 use cowl_vesting::{enums::VestingType, vesting::VestingInfo};
 use regex::Regex;
 use reqwest::Client;
@@ -263,4 +266,17 @@ async fn get_private_key_base64(public_key: &PublicKey) -> Option<String> {
         }
     }
     None
+}
+
+pub async fn get_key_pair_from_key(account_hash: &Key) -> (Option<String>, Option<KeyPair>) {
+    let config_lock = CONFIG_LOCK.lock().await.clone().unwrap();
+
+    for (vesting_type, (key_pair, _)) in config_lock.iter() {
+        if key_pair.public_key.to_account_hash().to_formatted_string()
+            == account_hash.to_formatted_string()
+        {
+            return (Some(vesting_type.to_string()), Some(key_pair.clone()));
+        }
+    }
+    (None, None)
 }

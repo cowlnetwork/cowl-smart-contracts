@@ -1,6 +1,7 @@
 use crate::utils::{
     config::get_key_pair_from_vesting, constants::COWL_CEP_18_TOKEN_SYMBOL,
-    get_contract_cep18_hash_keys, get_dictionary_item_params, sdk, stored_value_to_parsed_string,
+    get_contract_cep18_hash_keys, get_dictionary_item_params, keys::get_key_pair_from_key, sdk,
+    stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
     helpers::{get_base64_key_from_account_hash, motes_to_cspr},
@@ -68,12 +69,40 @@ pub async fn get_balance(
     let stored_value = match balance_result {
         Ok(result) => result.result.stored_value,
         Err(err) => {
-            log::error!(
-                "Failed to query balance from the contract.{} for {:?} {:?}",
-                err,
-                maybe_vesting_type,
-                maybe_key
-            );
+            if let Some(vesting_type) = maybe_vesting_type {
+                log::warn!(
+                    "No {} balance for {}!\n- Account Hash: {}",
+                    *COWL_CEP_18_TOKEN_SYMBOL,
+                    vesting_type,
+                    maybe_key
+                        .as_ref()
+                        .map(|key| key.to_formatted_string())
+                        .unwrap_or_else(|| "Unknown Key".to_string())
+                );
+            } else if let Some(key) = maybe_key {
+                let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
+                if let Some(key_pair) = key_pair {
+                    log::warn!(
+                        "No {} balance for {}\n\
+                        - Private Key: {:?}\n\
+                        - Public Key: {}\n\
+                        - Account Hash: {}",
+                        *COWL_CEP_18_TOKEN_SYMBOL,
+                        vesting_type.unwrap_or_default(),
+                        key_pair.private_key_base64,
+                        key_pair.public_key.to_string(),
+                        key_pair.public_key.to_account_hash().to_formatted_string()
+                    );
+                } else {
+                    log::warn!(
+                        "No {} balance!\n- Account Hash: {}",
+                        *COWL_CEP_18_TOKEN_SYMBOL,
+                        key.to_formatted_string()
+                    );
+                }
+            }
+
+            log::debug!("{err}");
             return 0.to_string();
         }
     };
