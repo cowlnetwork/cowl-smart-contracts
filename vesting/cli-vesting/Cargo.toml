@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "~4.4", features = ["derive"] }
+clap = { version = "~4.5", features = ["derive"] }
 casper-rust-wasm-sdk = { git = "https://github.com/casper-ecosystem/rustSDK", branch = "dev-1.6" }
 cowl-vesting = { path = "../contract", default-features = false }
 reqwest = { version = "*", default-features = false, features = ["json"] }

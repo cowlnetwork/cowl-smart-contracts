@@ -2,15 +2,18 @@ use crate::utils::{
     config::get_key_pair_from_vesting,
     constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
     format_with_thousands_separator, get_contract_cep18_hash_keys, get_dictionary_item_params,
-    keys::get_key_pair_from_key,
+    keys::{get_key_pair_from_key, KeyPair},
     sdk, stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
     helpers::{get_base64_key_from_account_hash, motes_to_cspr},
-    types::key::Key,
+    types::{key::Key, purse_identifier::PurseIdentifier},
 };
 use cowl_vesting::{constants::DICT_BALANCES, enums::VestingType};
+use indexmap::IndexMap;
 use serde_json::to_string;
+
+const DEFAULT_BALANCE: &str = "0";
 
 pub async fn get_balance(
     maybe_vesting_type: Option<VestingType>,
@@ -29,7 +32,7 @@ pub async fn get_balance(
                 vesting_type,
                 err
             );
-            0.to_string()
+            "".to_string()
         })
     } else if let Some(key) = maybe_key.clone() {
         get_base64_key_from_account_hash(&key.clone().into_account().unwrap().to_formatted_string())
@@ -39,11 +42,11 @@ pub async fn get_balance(
                     key.to_formatted_string(),
                     err
                 );
-                0.to_string()
+                "".to_string()
             })
     } else {
         log::error!("Both vesting_type and vesting_key are missing.");
-        return 0.to_string();
+        return DEFAULT_BALANCE.to_string();
     };
 
     // Retrieve contract token hash and package hash
@@ -51,7 +54,7 @@ pub async fn get_balance(
         Some((hash, package_hash)) => (hash, package_hash),
         None => {
             log::error!("Failed to retrieve contract token hash and package hash.");
-            return 0.to_string();
+            return DEFAULT_BALANCE.to_string();
         }
     };
 
@@ -105,7 +108,7 @@ pub async fn get_balance(
             }
 
             log::debug!("{err}");
-            return 0.to_string();
+            return DEFAULT_BALANCE.to_string();
         }
     };
 
@@ -113,27 +116,102 @@ pub async fn get_balance(
         Ok(s) => s,
         Err(_) => {
             log::error!("Failed to serialize stored value into JSON.");
-            return 0.to_string();
+            return DEFAULT_BALANCE.to_string();
         }
     };
     stored_value_to_parsed_string(&json_string).unwrap_or_default()
 }
 
-pub async fn print_balance(vesting_type: Option<VestingType>, vesting_key: Option<Key>) {
-    let balance = get_balance(vesting_type, vesting_key.clone()).await;
+pub async fn print_balance(maybe_vesting_type: Option<VestingType>, maybe_key: Option<Key>) {
+    let balance_token = get_balance(maybe_vesting_type, maybe_key.clone()).await;
 
-    let identifier = match vesting_type {
+    let identifier = match maybe_vesting_type {
         Some(vesting_type) => vesting_type.to_string(),
-        None => vesting_key
+        None => maybe_key
+            .clone()
             .map(|key| key.to_formatted_string())
             .unwrap_or_else(|| "Failed to retrieve account hash".to_string()),
     };
 
-    log::info!("Balance for {}", identifier);
-    log::info!("{} {}", &balance, *COWL_CEP_18_COOL_SYMBOL);
-    log::info!(
-        "{} {}",
-        format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
-        *COWL_CEP_18_TOKEN_SYMBOL
+    let mut key_info_map: IndexMap<String, IndexMap<String, String>> = IndexMap::new();
+    let mut key_map = IndexMap::new();
+
+    key_map.insert(
+        format!("balance_{}", *COWL_CEP_18_COOL_SYMBOL),
+        balance_token.clone(),
     );
+    key_map.insert(
+        format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
+        format_with_thousands_separator(&motes_to_cspr(&balance_token).unwrap()),
+    );
+
+    let (balance, balance_motes) =
+        get_cspr_balance_from_vesting_or_key(maybe_vesting_type, maybe_key, &identifier).await;
+
+    key_map.insert("balance_motes".to_string(), balance_motes);
+
+    key_map.insert(
+        "balance_CSPR".to_string(),
+        format_with_thousands_separator(&balance),
+    );
+
+    key_info_map.insert(identifier.clone(), key_map);
+
+    let json_output = serde_json::to_string_pretty(&key_info_map).unwrap();
+    log::info!("\n{}", json_output);
+}
+
+pub async fn get_cspr_balance(key_pair: &KeyPair, vesting_type: &str) -> (String, String) {
+    let purse_identifier = PurseIdentifier::from_main_purse_under_account_hash(
+        key_pair.public_key.clone().to_account_hash(),
+    );
+    let maybe_balance_motes = sdk()
+        .query_balance(None, None, Some(purse_identifier), None, None, None, None)
+        .await;
+
+    let balance_motes = if let Ok(balance_motes) = maybe_balance_motes {
+        balance_motes.result.balance.to_string()
+    } else {
+        log::warn!(
+            "No CSPR balance for {}\n\
+            - Private Key: {:?}\n\
+            - Public Key: {}\n\
+            - Account Hash: {}",
+            vesting_type,
+            key_pair.private_key_base64,
+            key_pair.public_key.to_string(),
+            key_pair.public_key.to_account_hash().to_formatted_string()
+        );
+        DEFAULT_BALANCE.to_string()
+    };
+    let balance = motes_to_cspr(&balance_motes).unwrap();
+    (balance, balance_motes)
+}
+
+async fn get_cspr_balance_from_vesting_or_key(
+    maybe_vesting_type: Option<VestingType>,
+    maybe_key: Option<Key>,
+    identifier: &str,
+) -> (String, String) {
+    let default_balance = (DEFAULT_BALANCE.to_string(), DEFAULT_BALANCE.to_string());
+    match (maybe_vesting_type, maybe_key) {
+        (Some(vesting_type), _) => {
+            let key_pair = get_key_pair_from_vesting(&vesting_type.to_string())
+                .await
+                .unwrap();
+            get_cspr_balance(&key_pair, &vesting_type.to_string()).await
+        }
+        (_, Some(key)) => {
+            let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
+
+            match (vesting_type, key_pair) {
+                (Some(vesting_type), Some(key_pair)) => {
+                    get_cspr_balance(&key_pair, &vesting_type).await
+                }
+                (None, Some(key_pair)) => get_cspr_balance(&key_pair, identifier).await,
+                _ => default_balance,
+            }
+        }
+        _ => default_balance,
+    }
 }

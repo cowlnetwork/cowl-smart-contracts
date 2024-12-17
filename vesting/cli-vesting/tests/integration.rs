@@ -141,11 +141,9 @@ mod tests_async {
             .arg(vesting_type)
             .assert()
             .success()
-            .stdout(predicates::str::contains(format!(
-                "Command executed: {} Balance for Community",
-                COWL_CEP_18_TOKEN_SYMBOL.clone()
-            )))
-            .stdout(predicates::str::contains("Balance for Community"))
+            .stdout(predicates::str::contains(
+                "Command executed: Balance for Community".to_string(),
+            ))
             .stdout(predicates::str::contains(
                 COWL_CEP_18_TOKEN_SYMBOL.to_string(),
             ));
@@ -166,11 +164,9 @@ mod tests_async {
             .arg(key)
             .assert()
             .success()
-            .stdout(predicates::str::contains(format!(
-                "Command executed: {} Balance for Community",
-                COWL_CEP_18_TOKEN_SYMBOL.clone()
-            )))
-            .stdout(predicates::str::contains("Balance for Community"))
+            .stdout(predicates::str::contains(
+                "Command executed: Balance for Community".to_string(),
+            ))
             .stdout(predicates::str::contains(
                 COWL_CEP_18_TOKEN_SYMBOL.to_string(),
             ));

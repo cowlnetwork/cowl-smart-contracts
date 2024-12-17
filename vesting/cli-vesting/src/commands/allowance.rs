@@ -22,7 +22,7 @@ pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
         }
     };
 
-    let dictionary_key = make_dictionary_item_key(&owner, &spender);
+    let dictionary_key = make_dictionary_item_key(owner, spender);
 
     // Get the dictionary item parameters for the allowance
     let dictionary_item = get_dictionary_item_params(

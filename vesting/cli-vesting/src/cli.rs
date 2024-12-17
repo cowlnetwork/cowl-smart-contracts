@@ -252,7 +252,7 @@ pub enum Commands {
         /// The amount to fund.
         #[arg(
             long,
-            help = "The amount to fund in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+            help = "The amount to fund in the smallest unit (e.g., '2500000000' represents 2.5 CSPR). Example: '2500000000' (minimum)"
         )]
         amount: String,
     },
@@ -462,19 +462,11 @@ impl Display for Commands {
             }
             Commands::Balance { vesting_type, key } => {
                 if let Some(vesting_type) = vesting_type {
-                    write!(
-                        f,
-                        "{} Balance for {}",
-                        *COWL_CEP_18_TOKEN_SYMBOL, vesting_type
-                    )
+                    write!(f, "Balance for {}", vesting_type)
                 } else if let Some(key) = key {
-                    write!(f, "{} Balance for {}", *COWL_CEP_18_TOKEN_SYMBOL, key)
+                    write!(f, "Balance for {}", key)
                 } else {
-                    write!(
-                        f,
-                        "{} Balance: No vesting_type or key provided",
-                        *COWL_CEP_18_TOKEN_SYMBOL
-                    )
+                    write!(f, "Balance: No vesting_type or key provided",)
                 }
             }
             Commands::Transfer { from, to, amount } => {
@@ -549,21 +541,22 @@ impl Display for Commands {
                 key,
                 amount,
             } => {
-                if let Some(vesting_type) = vesting_type {
-                    write!(
-                        f,
-                        "{} Balance for {}",
-                        *COWL_CEP_18_TOKEN_SYMBOL, vesting_type
-                    )
-                } else if let Some(key) = key {
-                    write!(f, "{} Balance for {}", *COWL_CEP_18_TOKEN_SYMBOL, key)
-                } else {
-                    write!(
-                        f,
-                        "{} Balance: No vesting_type or key provided",
-                        *COWL_CEP_18_TOKEN_SYMBOL
-                    )
-                }
+                let entity = vesting_type
+                    .clone()
+                    .map(|v| v.to_string())
+                    .or_else(|| key.clone());
+
+                let message = match entity {
+                    Some(ref entity_str) => format!(
+                        "CSPR Funding of {} CSPR ({} motes) for {}",
+                        format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                        amount,
+                        entity_str
+                    ),
+                    None => "CSPR Funding: No vesting_type or key provided".to_string(),
+                };
+
+                write!(f, "{}", message)
             }
         }
     }

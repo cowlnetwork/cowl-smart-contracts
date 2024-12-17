@@ -1,13 +1,10 @@
-use super::balance::get_balance;
+use super::balance::{get_balance, get_cspr_balance};
 use crate::utils::{
     config::CONFIG_LOCK,
     constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
-    format_with_thousands_separator, sdk,
+    format_with_thousands_separator,
 };
-use casper_rust_wasm_sdk::{
-    helpers::motes_to_cspr,
-    types::{key::Key, purse_identifier::PurseIdentifier},
-};
+use casper_rust_wasm_sdk::{helpers::motes_to_cspr, types::key::Key};
 use indexmap::IndexMap;
 
 pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String, String>>> {
@@ -20,13 +17,13 @@ pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String,
     if let Some(config) = cloned_config.as_ref() {
         let mut key_info_map: IndexMap<String, IndexMap<String, String>> = IndexMap::new();
         for (vesting_type, (key_pair, _)) in config {
-            let mut public_key_map = IndexMap::new();
+            let mut key_map = IndexMap::new();
 
-            public_key_map.insert(
+            key_map.insert(
                 "public_key".to_string(),
                 key_pair.public_key.to_string().clone(),
             );
-            public_key_map.insert(
+            key_map.insert(
                 "account_hash".to_string(),
                 key_pair
                     .public_key
@@ -35,33 +32,11 @@ pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String,
                     .to_formatted_string(),
             );
 
-            let purse_identifier = PurseIdentifier::from_main_purse_under_account_hash(
-                key_pair.public_key.clone().to_account_hash(),
-            );
-            let maybe_balance_motes = sdk()
-                .query_balance(None, None, Some(purse_identifier), None, None, None, None)
-                .await;
+            let (balance, balance_motes) = get_cspr_balance(key_pair, vesting_type).await;
 
-            let balance_motes = if let Ok(balance_motes) = maybe_balance_motes {
-                balance_motes.result.balance.to_string()
-            } else {
-                log::warn!(
-                    "No CSPR balance for {}\n\
-                    - Private Key: {:?}\n\
-                    - Public Key: {}\n\
-                    - Account Hash: {}",
-                    vesting_type,
-                    key_pair.private_key_base64,
-                    key_pair.public_key.to_string(),
-                    key_pair.public_key.to_account_hash().to_formatted_string()
-                );
-                "0".to_string()
-            };
-            let balance = motes_to_cspr(&balance_motes).unwrap();
+            key_map.insert("balance_motes".to_string(), balance_motes);
 
-            public_key_map.insert("balance_motes".to_string(), balance_motes);
-
-            public_key_map.insert(
+            key_map.insert(
                 "balance_CSPR".to_string(),
                 format_with_thousands_separator(&balance),
             );
@@ -74,16 +49,16 @@ pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String,
             )
             .await;
 
-            public_key_map.insert(
+            key_map.insert(
                 format!("balance_{}", *COWL_CEP_18_COOL_SYMBOL),
                 balance_token.clone(),
             );
-            public_key_map.insert(
+            key_map.insert(
                 format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
                 format_with_thousands_separator(&motes_to_cspr(&balance_token).unwrap()),
             );
 
-            key_info_map.insert(vesting_type.clone(), public_key_map);
+            key_info_map.insert(vesting_type.clone(), key_map);
         }
 
         // Sort key_info_map by its keys
