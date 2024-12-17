@@ -123,7 +123,8 @@ pub async fn get_balance(
 }
 
 pub async fn print_balance(maybe_vesting_type: Option<VestingType>, maybe_key: Option<Key>) {
-    let balance_token = get_balance(maybe_vesting_type, maybe_key.clone()).await;
+    let mut key_info_map: IndexMap<String, IndexMap<String, String>> = IndexMap::new();
+    let mut key_map = IndexMap::new();
 
     let identifier = match maybe_vesting_type {
         Some(vesting_type) => vesting_type.to_string(),
@@ -133,17 +134,7 @@ pub async fn print_balance(maybe_vesting_type: Option<VestingType>, maybe_key: O
             .unwrap_or_else(|| "Failed to retrieve account hash".to_string()),
     };
 
-    let mut key_info_map: IndexMap<String, IndexMap<String, String>> = IndexMap::new();
-    let mut key_map = IndexMap::new();
-
-    key_map.insert(
-        format!("balance_{}", *COWL_CEP_18_COOL_SYMBOL),
-        balance_token.clone(),
-    );
-    key_map.insert(
-        format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
-        format_with_thousands_separator(&motes_to_cspr(&balance_token).unwrap()),
-    );
+    let balance_token = get_balance(maybe_vesting_type, maybe_key.clone()).await;
 
     let (balance, balance_motes) =
         get_cspr_balance_from_vesting_or_key(maybe_vesting_type, maybe_key, &identifier).await;
@@ -153,6 +144,15 @@ pub async fn print_balance(maybe_vesting_type: Option<VestingType>, maybe_key: O
     key_map.insert(
         "balance_CSPR".to_string(),
         format_with_thousands_separator(&balance),
+    );
+
+    key_map.insert(
+        format!("balance_{}", *COWL_CEP_18_COOL_SYMBOL),
+        balance_token.clone(),
+    );
+    key_map.insert(
+        format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
+        format_with_thousands_separator(&motes_to_cspr(&balance_token).unwrap()),
     );
 
     key_info_map.insert(identifier.clone(), key_map);
