@@ -8,9 +8,9 @@ pub const SWAP_CONTRACT_VERSION: &str = "swap_contract_version_test";
 pub const COWL_CEP_18_TOKEN_NAME: &str = "cowl_test";
 pub const COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
 pub const COWL_CEP_18_TOKEN_DECIMALS: u8 = 9;
-pub const COWL_CEP18_TEST_TOKEN_CONTRACT_NAME: &str = "cowl_cep18_contract_hash_cowl_test";
+pub const COWL_CEP18_TEST_TOKEN_CONTRACT_NAME: &str = "cep18_contract_hash_cowl_test";
 pub const COWL_CEP18_TEST_TOKEN_CONTRACT_PACKAGE_NAME: &str =
-    "cowl_cep18_contract_package_hash_cowl_test";
+    "cep18_contract_package_hash_cowl_test";
 
 pub const ARG_SYMBOL: &str = "symbol";
 pub const ARG_DECIMALS: &str = "decimals";

@@ -10,7 +10,7 @@ pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
 
 pub const ARG_ADDRESS: &str = "address";
 pub const ARG_AMOUNT: &str = "amount";
-pub const ARG_COWL_CEP18_CONTRACT_PACKAGE: &str = "cowl_cep18_contract_package";
+pub const ARG_COWL_CEP18_CONTRACT_PACKAGE: &str = "cep18_contract_package";
 pub const ARG_CONTRACT_HASH: &str = "contract_hash";
 pub const ARG_DATA: &str = "data";
 pub const ARG_ENABLE_MINT_BURN: &str = "enable_mint_burn";

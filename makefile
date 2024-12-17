@@ -1,4 +1,4 @@
-SUBDIRS := casper/cep18 vesting
+SUBDIRS := casper/cep18 vesting swap
 
 .PHONY: build clean prepare $(SUBDIRS)
 

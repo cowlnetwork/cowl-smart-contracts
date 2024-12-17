@@ -7,11 +7,10 @@ const DEFAULT_EVENT_ADDRESS: &str = "http://127.0.0.1:9999/events/main";
 const DEFAULT_CHAIN_NAME: &str = "casper-net-1";
 const DEFAULT_TTL: &str = "30m";
 const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000"; // 300 CSPR
-const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "test";
 const DEFAULT_COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
 pub const DEFAULT_COWL_CEP_18_TOKEN_DECIMALS: u8 = 9;
-const DEFAULT_NAME_CEP18: &str = "cowl_cep18";
-const DEFAULT_NAME_VESTING: &str = "cowl_vesting";
+pub const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "cowl_cep18";
+pub const DEFAULT_COWL_VESTING_NAME: &str = "cowl_vesting";
 
 const DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT: &str = "350000000"; // 0.35 CSPR
 const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1500000000"; // 1.5 CSPR
@@ -41,20 +40,14 @@ pub static COWL_CEP_18_TOKEN_DECIMALS: Lazy<String> = Lazy::new(|| {
     env::var("COWL_CEP_18_TOKEN_DECIMALS")
         .unwrap_or_else(|_| DEFAULT_COWL_CEP_18_TOKEN_DECIMALS.to_string())
 });
-pub static NAME_CEP18: Lazy<String> =
-    Lazy::new(|| env::var("NAME_CEP18").unwrap_or_else(|_| DEFAULT_NAME_CEP18.to_string()));
-
 pub static COWL_CEP18_TOKEN_CONTRACT_HASH_NAME: Lazy<String> =
-    Lazy::new(|| format!("{}_contract_hash_{}", *NAME_CEP18, *COWL_CEP_18_TOKEN_NAME));
-pub static COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME: Lazy<String> = Lazy::new(|| {
-    format!(
-        "{}_contract_package_hash_{}",
-        *NAME_CEP18, *COWL_CEP_18_TOKEN_NAME
-    )
-});
+    Lazy::new(|| format!("cep18_contract_hash_{}", *COWL_CEP_18_TOKEN_NAME));
+pub static COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME: Lazy<String> =
+    Lazy::new(|| format!("cep18_contract_package_hash_{}", *COWL_CEP_18_TOKEN_NAME));
 
-pub static NAME_VESTING: Lazy<String> =
-    Lazy::new(|| env::var("NAME_VESTING").unwrap_or_else(|_| DEFAULT_NAME_VESTING.to_string()));
+pub static COWL_VESTING_NAME: Lazy<String> = Lazy::new(|| {
+    env::var("COWL_VESTING_NAME").unwrap_or_else(|_| DEFAULT_COWL_VESTING_NAME.to_string())
+});
 pub static COWL_VESTING_CALL_PAYMENT_AMOUNT: Lazy<String> = Lazy::new(|| {
     env::var("COWL_VESTING_CALL_PAYMENT_AMOUNT")
         .unwrap_or_else(|_| DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT.to_string())

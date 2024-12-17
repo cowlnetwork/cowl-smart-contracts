@@ -2,8 +2,9 @@ use crate::utils::{
     config::{get_key_pair_from_vesting, CONFIG_LOCK},
     constants::{
         CHAIN_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT, COWL_CEP_18_TOKEN_DECIMALS,
-        COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, DEFAULT_COWL_CEP_18_TOKEN_DECIMALS,
-        EVENT_ADDRESS, INSTALLER, NAME_CEP18, NAME_VESTING, TTL, WASM_PATH,
+        COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_VESTING_NAME,
+        DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME,
+        DEFAULT_COWL_VESTING_NAME, EVENT_ADDRESS, INSTALLER, TTL, WASM_PATH,
     },
     get_contract_cep18_hash_keys, get_contract_vesting_hash_keys,
     keys::format_base64_to_pem,
@@ -73,7 +74,7 @@ static ARGS_VESTING_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
         {
             "name": ARG_NAME,
             "type": "String",
-            "value": *NAME_VESTING
+            "value": *COWL_VESTING_NAME
         },
     ]))
 });
@@ -128,10 +129,11 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let module_bytes = match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, *NAME_CEP18)) {
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_CEP_18_TOKEN_NAME);
+    let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
-            log::error!("Error reading file: {:?}", err);
+            log::error!("Error reading file {}: {:?}", path, err);
             return Err(err);
         }
     };
@@ -273,10 +275,11 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let module_bytes = match read_wasm_file(&format!("{}{}.wasm", WASM_PATH, *NAME_VESTING)) {
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_VESTING_NAME);
+    let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
-            log::error!("Error reading file: {:?}", err);
+            log::error!("Error reading file {}: {:?}", path, err);
             return Err(err);
         }
     };

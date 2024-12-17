@@ -14,7 +14,7 @@ use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
     COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENT_ADDRESS,
-    INSTALLER, NAME_VESTING, RPC_ADDRESS, TTL,
+    INSTALLER, COWL_VESTING_NAME, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
@@ -160,8 +160,8 @@ pub async fn get_contract_vesting_hash_keys() -> Option<(String, String)> {
         .public_key;
     get_contract_hash_keys(
         &public_key,
-        &format!("{PREFIX_CONTRACT_NAME}_{}", *NAME_VESTING),
-        &format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{}", *NAME_VESTING),
+        &format!("{PREFIX_CONTRACT_NAME}_{}", *COWL_VESTING_NAME),
+        &format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{}", *COWL_VESTING_NAME),
     )
     .await
 }
