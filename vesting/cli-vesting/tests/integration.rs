@@ -198,7 +198,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Transfer 100 {}",
+                "Command executed: Transfer 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(from))
@@ -231,7 +231,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Transfer 100 {}",
+                "Command executed: Transfer 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(from))
@@ -264,7 +264,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Transfer 100 {}",
+                "Command executed: Transfer 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(from))
@@ -297,7 +297,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Increase Allowance 100 {}",
+                "Command executed: Increase Allowance 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(spender))
@@ -330,7 +330,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Increase Allowance 100 {}",
+                "Command executed: Increase Allowance 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains("of Treasury"))
@@ -363,7 +363,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Decrease Allowance 50 {}",
+                "Command executed: Decrease Allowance 50.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(spender))
@@ -396,7 +396,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Decrease Allowance 50 {}",
+                "Command executed: Decrease Allowance 50.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains("of Treasury"))
@@ -478,7 +478,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Increase Allowance 100 {}",
+                "Command executed: Increase Allowance 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(spender))
@@ -503,7 +503,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: TransferFrom 100 {}",
+                "Command executed: TransferFrom 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(spender))
@@ -541,7 +541,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Increase Allowance 100 {}",
+                "Command executed: Increase Allowance 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(spender))
@@ -568,7 +568,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: TransferFrom 100 {}",
+                "Command executed: TransferFrom 100.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(owner))

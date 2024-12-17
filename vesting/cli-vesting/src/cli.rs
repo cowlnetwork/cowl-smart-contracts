@@ -1,6 +1,10 @@
 use crate::{
     commands,
-    utils::{config::get_key_pair_from_vesting, constants::COWL_CEP_18_TOKEN_SYMBOL},
+    utils::{
+        config::get_key_pair_from_vesting,
+        constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+        format_with_thousands_separator,
+    },
 };
 use casper_rust_wasm_sdk::{
     helpers::motes_to_cspr,
@@ -95,6 +99,7 @@ pub enum Commands {
         )]
         key: Option<String>,
     },
+
     /// Transfer tokens between accounts or vesting types.
     #[command(
         name = "transfer",
@@ -224,6 +229,30 @@ pub enum Commands {
         #[arg(
             long,
             help = "The amount to decrease in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+        )]
+        amount: String,
+    },
+
+    /// Fund and retrieve the balance of a vesting or public key.
+    #[command(
+        name = "fund-cspr",
+        about = "Fund and retrieve the balance for a specific vesting type or key (Public key or Account hash)"
+    )]
+    Fund {
+        /// Specify the vesting type (optional).
+        #[arg(long, help = "The vesting type to retrieve the balance for")]
+        vesting_type: Option<String>,
+
+        /// Specify the public or account key (optional).
+        #[arg(
+            long,
+            help = "The public key or account hash to retrieve the balance for"
+        )]
+        key: Option<String>,
+        /// The amount to fund.
+        #[arg(
+            long,
+            help = "The amount to fund in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
         )]
         amount: String,
     },
@@ -387,6 +416,22 @@ pub async fn run() {
             )
             .await
         }
+        Commands::Fund {
+            vesting_type,
+            key,
+            amount,
+        } => {
+            commands::fund::print_fund_addresses(
+                vesting_type.map(|f| {
+                    f.as_str()
+                        .try_into()
+                        .expect("Failed to convert vesting type")
+                }),
+                key.map(|formatted_str| parse_key_from_formatted_str(&formatted_str)),
+                amount,
+            )
+            .await
+        }
     }
 }
 
@@ -435,9 +480,11 @@ impl Display for Commands {
             Commands::Transfer { from, to, amount } => {
                 write!(
                     f,
-                    "Transfer {} {} \nfrom {} \nto: {}",
-                    motes_to_cspr(amount).unwrap(),
+                    "Transfer {} {} ({} {}) \nfrom {} \nto: {}",
+                    format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                     *COWL_CEP_18_TOKEN_SYMBOL,
+                    amount,
+                    *COWL_CEP_18_COOL_SYMBOL,
                     from.clone(),
                     to.clone()
                 )
@@ -457,9 +504,11 @@ impl Display for Commands {
             } => {
                 write!(
                     f,
-                    "TransferFrom {} {} \nby {} \nfrom {} \nto: {}",
-                    motes_to_cspr(amount).unwrap(),
+                    "TransferFrom {} {} ({} {}) \nby {} \nfrom {} \nto: {}",
+                    format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                     *COWL_CEP_18_TOKEN_SYMBOL,
+                    amount,
+                    *COWL_CEP_18_COOL_SYMBOL,
                     operator.clone(),
                     from.clone(),
                     to.clone()
@@ -472,9 +521,11 @@ impl Display for Commands {
             } => {
                 write!(
                     f,
-                    "Increase Allowance {} {} \nof {}",
-                    motes_to_cspr(amount).unwrap(),
+                    "Increase Allowance {} {} ({} {}) \nof {}",
+                    format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                     *COWL_CEP_18_TOKEN_SYMBOL,
+                    amount,
+                    *COWL_CEP_18_COOL_SYMBOL,
                     spender.clone(),
                 )
             }
@@ -485,11 +536,34 @@ impl Display for Commands {
             } => {
                 write!(
                     f,
-                    "Decrease Allowance {} {} \nof {}",
-                    motes_to_cspr(amount).unwrap(),
+                    "Decrease Allowance {} {} ({} {}) \nof {}",
+                    format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                     *COWL_CEP_18_TOKEN_SYMBOL,
+                    amount,
+                    *COWL_CEP_18_COOL_SYMBOL,
                     spender.clone(),
                 )
+            }
+            Commands::Fund {
+                vesting_type,
+                key,
+                amount,
+            } => {
+                if let Some(vesting_type) = vesting_type {
+                    write!(
+                        f,
+                        "{} Balance for {}",
+                        *COWL_CEP_18_TOKEN_SYMBOL, vesting_type
+                    )
+                } else if let Some(key) = key {
+                    write!(f, "{} Balance for {}", *COWL_CEP_18_TOKEN_SYMBOL, key)
+                } else {
+                    write!(
+                        f,
+                        "{} Balance: No vesting_type or key provided",
+                        *COWL_CEP_18_TOKEN_SYMBOL
+                    )
+                }
             }
         }
     }

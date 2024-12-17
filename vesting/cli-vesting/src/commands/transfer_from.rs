@@ -1,7 +1,10 @@
 use super::balance::get_balance;
 use crate::utils::{
-    call_token_transfer_entry_point, constants::COWL_CEP_18_TOKEN_SYMBOL,
-    get_contract_cep18_hash_keys, keys::retrieve_private_key, prompt_yes_no,
+    call_token_transfer_entry_point,
+    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+    format_with_thousands_separator, get_contract_cep18_hash_keys,
+    keys::retrieve_private_key,
+    prompt_yes_no,
 };
 use casper_rust_wasm_sdk::{
     helpers::motes_to_cspr,
@@ -27,9 +30,11 @@ pub async fn transfer_from(
     let secret_key = retrieve_private_key(&operator).await;
 
     let answer = prompt_yes_no(&format!(
-        "Please confirm transfer_from of {} {} to {}?",
-        motes_to_cspr(&amount).unwrap(),
+        "Please confirm transfer_from of {} ({} {}) {} to {}?",
+        format_with_thousands_separator(&motes_to_cspr(&amount).unwrap()),
         *COWL_CEP_18_TOKEN_SYMBOL,
+        amount,
+        *COWL_CEP_18_COOL_SYMBOL,
         &to.to_formatted_string()
     ));
 
@@ -58,8 +63,9 @@ pub async fn print_transfer_from(operator: PublicKey, from: Key, to: Key, amount
         log::info!("Balance for {}", to.to_formatted_string());
         log::info!(
             "{} {}",
-            motes_to_cspr(&balance).unwrap(),
+            format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
             *COWL_CEP_18_TOKEN_SYMBOL
         );
+        log::info!("{} {}", balance, *COWL_CEP_18_COOL_SYMBOL);
     }
 }

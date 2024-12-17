@@ -304,7 +304,7 @@ async fn execute_contract_entry_point(
         })
         .cost;
 
-    let cost = motes_to_cspr(&motes).unwrap();
+    let cost = format_with_thousands_separator(&motes_to_cspr(&motes).unwrap());
 
     let finalized_approvals = true;
     let get_deploy = sdk()

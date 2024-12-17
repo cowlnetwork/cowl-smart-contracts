@@ -1,6 +1,8 @@
 use crate::utils::{
-    call_token_set_allowance_entry_point, constants::COWL_CEP_18_TOKEN_SYMBOL,
-    get_contract_cep18_hash_keys, get_dictionary_item_params, keys::retrieve_private_key,
+    call_token_set_allowance_entry_point,
+    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+    format_with_thousands_separator, get_contract_cep18_hash_keys, get_dictionary_item_params,
+    keys::retrieve_private_key,
     prompt_yes_no, sdk, stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
@@ -52,13 +54,15 @@ pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
     };
     stored_value_to_parsed_string(&json_string).unwrap_or_default()
 }
+
 pub async fn print_get_allowance(owner: &Key, spender: &Key) {
     let allowance = get_allowance(owner, spender).await;
 
     log::info!("Allowance for {}", spender.to_formatted_string());
+    log::info!("{} {}", allowance, *COWL_CEP_18_COOL_SYMBOL);
     log::info!(
         "{} {}",
-        motes_to_cspr(&allowance).unwrap(),
+        format_with_thousands_separator(&motes_to_cspr(&allowance).unwrap()),
         *COWL_CEP_18_TOKEN_SYMBOL
     );
 }
@@ -82,9 +86,9 @@ pub async fn set_allowance(
     let secret_key = retrieve_private_key(owner).await;
 
     let answer = prompt_yes_no(&format!(
-        "Please confirm {} allowance of {} {} for {}?",
+        "Please confirm {} allowance of {} () {} for {}?",
         if decrease { "decreasing" } else { "increasing" },
-        motes_to_cspr(&amount).unwrap(),
+        format_with_thousands_separator(&motes_to_cspr(&amount).unwrap()),
         *COWL_CEP_18_TOKEN_SYMBOL,
         &spender.to_formatted_string()
     ));
@@ -114,7 +118,7 @@ pub async fn print_increase_allowance(owner: &PublicKey, spender: &Key, amount: 
         log::info!("Increase allowance for {}", spender.to_formatted_string());
         log::info!(
             "{} {}",
-            motes_to_cspr(&allowance).unwrap(),
+            format_with_thousands_separator(&motes_to_cspr(&allowance).unwrap()),
             *COWL_CEP_18_TOKEN_SYMBOL
         );
     }
@@ -125,7 +129,7 @@ pub async fn print_decrease_allowance(owner: &PublicKey, spender: &Key, amount: 
         log::info!("Decrease allowance for {}", spender.to_formatted_string());
         log::info!(
             "{} {}",
-            motes_to_cspr(&allowance).unwrap(),
+            format_with_thousands_separator(&motes_to_cspr(&allowance).unwrap()),
             *COWL_CEP_18_TOKEN_SYMBOL
         );
     }

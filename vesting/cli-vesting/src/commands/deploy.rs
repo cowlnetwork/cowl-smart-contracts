@@ -6,7 +6,7 @@ use crate::utils::{
         DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME,
         DEFAULT_COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
     },
-    get_contract_cep18_hash_keys, get_contract_vesting_hash_keys,
+    format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_vesting_hash_keys,
     keys::format_base64_to_pem,
     prompt_yes_no, read_wasm_file, sdk,
 };
@@ -194,7 +194,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         })
         .cost;
 
-    let cost = motes_to_cspr(&motes).unwrap();
+    let cost = format_with_thousands_separator(&motes_to_cspr(&motes).unwrap());
 
     let finalized_approvals = true;
     let get_deploy = sdk()
@@ -203,7 +203,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
     let get_deploy = get_deploy.unwrap();
     let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
     log::info!("Processed deploy hash {result}");
-    log::info!("Cost {cost} CSPR");
+    log::info!("Cost {cost} CSPR ({motes} motes)");
     let (contract_cep18_hash, contract_cep18_package_hash) =
         match get_contract_cep18_hash_keys().await {
             Some((hash, package_hash)) => (hash, package_hash),
@@ -365,7 +365,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         })
         .cost;
 
-    let cost = motes_to_cspr(&motes).unwrap();
+    let cost = format_with_thousands_separator(&motes_to_cspr(&motes).unwrap());
 
     let finalized_approvals = true;
     let get_deploy = sdk()
@@ -374,7 +374,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
     let get_deploy = get_deploy.unwrap();
     let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
     log::info!("Processed deploy hash {result}");
-    log::info!("Cost {cost} CSPR");
+    log::info!("Cost {cost} CSPR ({motes} motes)");
     let (contract_vesting_hash, contract_vesting_package_hash) =
         match get_contract_vesting_hash_keys().await {
             Some((hash, package_hash)) => (hash, package_hash),
