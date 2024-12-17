@@ -34,13 +34,17 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
             let purse_identifier = PurseIdentifier::from_main_purse_under_account_hash(
                 key_pair.public_key.clone().to_account_hash(),
             );
-            let balance_motes = sdk()
+            let maybe_balance_motes = sdk()
                 .query_balance(None, None, Some(purse_identifier), None, None, None, None)
-                .await
-                .unwrap()
-                .result
-                .balance;
-            let balance = motes_to_cspr(&balance_motes.to_string()).unwrap();
+                .await;
+
+            let balance_motes = if let Ok(balance_motes) = maybe_balance_motes {
+                balance_motes.result.balance.to_string()
+            } else {
+                log::warn!("{vesting_type} {:?} has no CSPR balance", key_pair);
+                "0".to_string()
+            };
+            let balance = motes_to_cspr(&balance_motes).unwrap();
 
             public_key_map.insert("balance_CSPR".to_string(), balance.to_string());
 

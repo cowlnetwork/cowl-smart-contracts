@@ -38,7 +38,7 @@ pub async fn get_allowance(owner: &Key, spender: &Key) -> String {
     let stored_value = match allowance_result {
         Ok(result) => result.result.stored_value,
         Err(err) => {
-            log::debug!("Failed to query allowance from the contract.{}", err);
+            log::error!("Failed to query allowance from the contract.{}", err);
             return 0.to_string();
         }
     };

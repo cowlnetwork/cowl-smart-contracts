@@ -28,7 +28,7 @@ pub async fn get_balance(
             );
             0.to_string()
         })
-    } else if let Some(key) = maybe_key {
+    } else if let Some(key) = maybe_key.clone() {
         get_base64_key_from_account_hash(&key.clone().into_account().unwrap().to_formatted_string())
             .unwrap_or_else(|err| {
                 log::error!(
@@ -68,7 +68,12 @@ pub async fn get_balance(
     let stored_value = match balance_result {
         Ok(result) => result.result.stored_value,
         Err(err) => {
-            log::debug!("Failed to query balance from the contract.{}", err);
+            log::error!(
+                "Failed to query balance from the contract.{} for {:?} {:?}",
+                err,
+                maybe_vesting_type,
+                maybe_key
+            );
             return 0.to_string();
         }
     };
