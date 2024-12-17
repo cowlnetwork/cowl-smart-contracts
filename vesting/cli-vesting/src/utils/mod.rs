@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use casper_rust_wasm_sdk::deploy_watcher::watcher::EventParseResult;
 use casper_rust_wasm_sdk::helpers::motes_to_cspr;
 use casper_rust_wasm_sdk::rpcs::get_dictionary_item::DictionaryItemInput;
@@ -13,8 +14,8 @@ use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
-    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS,
-    INSTALLER, COWL_VESTING_NAME, RPC_ADDRESS, TTL,
+    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
+    EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
@@ -24,10 +25,12 @@ use cowl_vesting::constants::{
 use cowl_vesting::enums::VestingType;
 use cowl_vesting::vesting::VestingData;
 use keys::format_base64_to_pem;
+use num_format::{Locale, ToFormattedString};
 use once_cell::sync::Lazy;
 use serde_json::{json, to_string, Value};
 use std::io::Write;
 use std::process;
+use std::str::FromStr;
 use std::{
     env,
     fs::File,
@@ -422,4 +425,38 @@ pub async fn call_token_set_allowance_entry_point(
         secret_key,
     )
     .await;
+}
+
+/// Formats a large number string with thousands separators and two decimal places.
+///
+/// # Arguments
+/// * `number_str` - A number represented as a `&str`.
+///
+/// # Returns
+/// * A `String` representing the formatted number, or "Invalid number" if parsing fails.
+pub fn format_with_thousands_separator(number_str: &str) -> String {
+    // Parse the input string into a BigDecimal
+    let number = match BigDecimal::from_str(number_str) {
+        Ok(n) => n,
+        Err(_) => return "Invalid number".to_string(),
+    };
+
+    // Round to two decimal places
+    let rounded = number.round(2);
+
+    // Separate the integer and fractional parts
+    let binding = rounded.to_string();
+    let parts: Vec<&str> = binding.split('.').collect();
+    let integer_part = parts.first().unwrap_or(&"0");
+    let decimal_part = parts.get(1).unwrap_or(&"00");
+
+    // Parse the integer part into a BigInt for formatting
+    let integer_bigint = match integer_part.parse::<u128>() {
+        Ok(n) => n,
+        Err(_) => return "Invalid integer".to_string(),
+    };
+    let formatted_integer = integer_bigint.to_formatted_string(&Locale::en);
+
+    // Combine the formatted integer and fractional parts
+    format!("{}.{}", formatted_integer, decimal_part)
 }

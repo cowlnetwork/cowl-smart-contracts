@@ -1,7 +1,9 @@
 use crate::utils::{
-    config::get_key_pair_from_vesting, constants::COWL_CEP_18_TOKEN_SYMBOL,
-    get_contract_cep18_hash_keys, get_dictionary_item_params, keys::get_key_pair_from_key, sdk,
-    stored_value_to_parsed_string,
+    config::get_key_pair_from_vesting,
+    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+    format_with_thousands_separator, get_contract_cep18_hash_keys, get_dictionary_item_params,
+    keys::get_key_pair_from_key,
+    sdk, stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
     helpers::{get_base64_key_from_account_hash, motes_to_cspr},
@@ -128,9 +130,10 @@ pub async fn print_balance(vesting_type: Option<VestingType>, vesting_key: Optio
     };
 
     log::info!("Balance for {}", identifier);
+    log::info!("{} {}", &balance, *COWL_CEP_18_COOL_SYMBOL);
     log::info!(
         "{} {}",
-        motes_to_cspr(&balance).unwrap(),
+        format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
         *COWL_CEP_18_TOKEN_SYMBOL
     );
 }

@@ -1,12 +1,16 @@
 use super::balance::get_balance;
-use crate::utils::{config::CONFIG_LOCK, constants::COWL_CEP_18_TOKEN_SYMBOL, sdk};
+use crate::utils::{
+    config::CONFIG_LOCK,
+    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+    format_with_thousands_separator, sdk,
+};
 use casper_rust_wasm_sdk::{
     helpers::motes_to_cspr,
     types::{key::Key, purse_identifier::PurseIdentifier},
 };
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
-pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String, String>>> {
+pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String, String>>> {
     // Acquire the lock and clone info
     let cloned_config = {
         let config_lock = CONFIG_LOCK.lock().await;
@@ -14,9 +18,9 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
     };
 
     if let Some(config) = cloned_config.as_ref() {
-        let mut key_info_map: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+        let mut key_info_map: IndexMap<String, IndexMap<String, String>> = IndexMap::new();
         for (vesting_type, (key_pair, _)) in config {
-            let mut public_key_map = BTreeMap::new();
+            let mut public_key_map = IndexMap::new();
 
             public_key_map.insert(
                 "public_key".to_string(),
@@ -55,7 +59,12 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
             };
             let balance = motes_to_cspr(&balance_motes).unwrap();
 
-            public_key_map.insert("balance_CSPR".to_string(), balance.to_string());
+            public_key_map.insert("balance_motes".to_string(), balance_motes);
+
+            public_key_map.insert(
+                "balance_CSPR".to_string(),
+                format_with_thousands_separator(&balance),
+            );
 
             let balance_token = get_balance(
                 None,
@@ -66,17 +75,32 @@ pub async fn list_funded_addresses() -> Option<BTreeMap<String, BTreeMap<String,
             .await;
 
             public_key_map.insert(
+                format!("balance_{}", *COWL_CEP_18_COOL_SYMBOL),
+                balance_token.clone(),
+            );
+            public_key_map.insert(
                 format!("balance_{}", *COWL_CEP_18_TOKEN_SYMBOL),
-                motes_to_cspr(&balance_token.to_string()).unwrap(),
+                format_with_thousands_separator(&motes_to_cspr(&balance_token).unwrap()),
             );
 
-            key_info_map.insert(vesting_type.to_string(), public_key_map);
+            key_info_map.insert(vesting_type.clone(), public_key_map);
         }
 
-        Some(key_info_map)
+        // Sort key_info_map by its keys
+        let sorted_key_info_map = sort_indexmap(key_info_map);
+
+        Some(sorted_key_info_map)
     } else {
         None
     }
+}
+
+fn sort_indexmap<K: Ord + Clone + std::hash::Hash, V: Clone>(
+    map: IndexMap<K, V>,
+) -> IndexMap<K, V> {
+    let mut sorted_entries: Vec<_> = map.into_iter().collect();
+    sorted_entries.sort_by(|a, b| a.0.cmp(&b.0));
+    sorted_entries.into_iter().collect()
 }
 
 pub async fn print_funded_addresses() {

@@ -22,6 +22,9 @@ log = "*"
 env_logger = "*"
 chrono = "*"
 strum = { version = "*", features = ["derive"] }
+indexmap = { version = "2.7.0", default-features = false, features = ["serde"] }
+num-format = "0.4"
+bigdecimal = "0.4"
 
 [dev-dependencies]
 assert_cmd = "*"

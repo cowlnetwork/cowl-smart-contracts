@@ -8,6 +8,7 @@ const DEFAULT_CHAIN_NAME: &str = "casper-net-1";
 const DEFAULT_TTL: &str = "30m";
 const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000"; // 300 CSPR
 const DEFAULT_COWL_CEP_18_TOKEN_SYMBOL: &str = "COWL";
+const DEFAULT_COWL_CEP_18_COOL_SYMBOL: &str = "cool";
 pub const DEFAULT_COWL_CEP_18_TOKEN_DECIMALS: u8 = 9;
 pub const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "cowl_cep18";
 pub const DEFAULT_COWL_VESTING_NAME: &str = "cowl_vesting";
@@ -35,6 +36,10 @@ pub static COWL_CEP_18_TOKEN_NAME: Lazy<String> = Lazy::new(|| {
 pub static COWL_CEP_18_TOKEN_SYMBOL: Lazy<String> = Lazy::new(|| {
     env::var("COWL_CEP_18_TOKEN_SYMBOL")
         .unwrap_or_else(|_| DEFAULT_COWL_CEP_18_TOKEN_SYMBOL.to_string())
+});
+pub static COWL_CEP_18_COOL_SYMBOL: Lazy<String> = Lazy::new(|| {
+    env::var("COWL_CEP_18_COOL_SYMBOL")
+        .unwrap_or_else(|_| DEFAULT_COWL_CEP_18_COOL_SYMBOL.to_string())
 });
 pub static COWL_CEP_18_TOKEN_DECIMALS: Lazy<String> = Lazy::new(|| {
     env::var("COWL_CEP_18_TOKEN_DECIMALS")
