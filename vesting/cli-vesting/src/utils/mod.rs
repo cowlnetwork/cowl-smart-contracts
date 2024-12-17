@@ -13,7 +13,7 @@ use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
-    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENT_ADDRESS,
+    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS,
     INSTALLER, COWL_VESTING_NAME, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
@@ -282,7 +282,7 @@ async fn execute_contract_entry_point(
     log::info!("Wait deploy_hash for entry point {}", deploy_hash_as_string);
 
     let event_parse_result: EventParseResult = sdk()
-        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
 

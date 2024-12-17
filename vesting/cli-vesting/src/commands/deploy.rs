@@ -4,7 +4,7 @@ use crate::utils::{
         CHAIN_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT, COWL_CEP_18_TOKEN_DECIMALS,
         COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_VESTING_NAME,
         DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME,
-        DEFAULT_COWL_VESTING_NAME, EVENT_ADDRESS, INSTALLER, TTL, WASM_PATH,
+        DEFAULT_COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
     },
     get_contract_cep18_hash_keys, get_contract_vesting_hash_keys,
     keys::format_base64_to_pem,
@@ -175,7 +175,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
     );
 
     let event_parse_result: EventParseResult = sdk()
-        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
 
@@ -347,7 +347,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         deploy_hash_as_string
     );
     let event_parse_result: EventParseResult = sdk()
-        .wait_deploy(&EVENT_ADDRESS, &deploy_hash_as_string, None)
+        .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
         .await
         .unwrap();
     let motes = event_parse_result

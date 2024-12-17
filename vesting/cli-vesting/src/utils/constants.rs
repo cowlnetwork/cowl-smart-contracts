@@ -3,7 +3,7 @@ use std::env;
 
 // All those following can be overifden by .env
 const DEFAULT_RPC_ADDRESS: &str = "http://127.0.0.1:7777";
-const DEFAULT_EVENT_ADDRESS: &str = "http://127.0.0.1:9999/events/main";
+const DEFAULT_EVENTS_ADDRESS: &str = "http://127.0.0.1:9999/events/main";
 const DEFAULT_CHAIN_NAME: &str = "casper-net-1";
 const DEFAULT_TTL: &str = "30m";
 const DEFAULT_COWL_CEP_18_INSTALL_PAYMENT_AMOUNT: &str = "300000000000"; // 300 CSPR
@@ -17,8 +17,8 @@ const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "1500000000"; // 1
 
 pub static RPC_ADDRESS: Lazy<String> =
     Lazy::new(|| env::var("RPC_ADDRESS").unwrap_or_else(|_| DEFAULT_RPC_ADDRESS.to_string()));
-pub static EVENT_ADDRESS: Lazy<String> =
-    Lazy::new(|| env::var("EVENT_ADDRESS").unwrap_or_else(|_| DEFAULT_EVENT_ADDRESS.to_string()));
+pub static EVENTS_ADDRESS: Lazy<String> =
+    Lazy::new(|| env::var("EVENTS_ADDRESS").unwrap_or_else(|_| DEFAULT_EVENTS_ADDRESS.to_string()));
 pub static CHAIN_NAME: Lazy<String> =
     Lazy::new(|| env::var("CHAIN_NAME").unwrap_or_else(|_| DEFAULT_CHAIN_NAME.to_string()));
 pub static TTL: Lazy<String> =
