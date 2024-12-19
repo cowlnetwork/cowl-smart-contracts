@@ -59,6 +59,7 @@ pub const ADMIN_LIST: &str = "admin_list";
 pub const MINTER_LIST: &str = "minter_list";
 pub const NONE_LIST: &str = "none_list";
 
+// This is COWL Unit, not the smallest unit with decimal
 pub const COWL_CEP_18_TOKEN_TOTAL_SUPPLY: u64 = 5_500_000_000;
 
 // Durations
