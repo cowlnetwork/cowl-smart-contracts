@@ -2,6 +2,7 @@ use crate::{
     constants::{
         DURATION_COMMUNITY_VESTING, DURATION_CONTRIBUTOR_VESTING, DURATION_DEVELOPMENT_VESTING,
         DURATION_LIQUIDITY_VESTING, DURATION_STAKING_VESTING, DURATION_TREASURY_VESTING,
+        TEST_VESTING_PERIOD
     },
     error::VestingError,
     vesting::VestingInfo,
@@ -127,31 +128,37 @@ pub const VESTING_INFO: &[VestingInfo] = &[
         vesting_type: VestingType::Treasury,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_TREASURY_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
     VestingInfo {
         vesting_type: VestingType::Contributor,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_CONTRIBUTOR_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
     VestingInfo {
         vesting_type: VestingType::Development,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_DEVELOPMENT_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
     VestingInfo {
         vesting_type: VestingType::Liquidity,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_LIQUIDITY_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
     VestingInfo {
         vesting_type: VestingType::Community,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_COMMUNITY_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
     VestingInfo {
         vesting_type: VestingType::Staking,
         maybe_vesting_address_key: None,
         vesting_duration: DURATION_STAKING_VESTING,
+        vesting_period: TEST_VESTING_PERIOD, // testing only!
     },
 ];
 
