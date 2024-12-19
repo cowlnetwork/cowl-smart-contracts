@@ -18,6 +18,9 @@ build:
 	$(MAKE) -C vesting/cli-vesting build
 
 # Test all subprojects
+setup-test: build 
+	$(MAKE) -C vesting setup-test
+
 test:
 	@$(foreach dir,$(SUBDIRS),$(MAKE) -C $(dir) test;)
 	$(MAKE) -C vesting/cli-vesting test

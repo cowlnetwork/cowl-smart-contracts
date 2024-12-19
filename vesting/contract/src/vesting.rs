@@ -49,6 +49,7 @@ pub struct VestingInfo {
     pub vesting_type: VestingType,
     pub maybe_vesting_address_key: Option<Key>,
     pub vesting_duration: Option<Duration>,
+    pub vesting_period: u64,
 }
 
 impl VestingInfo {
@@ -56,10 +57,11 @@ impl VestingInfo {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingInfo {{ vesting_type: {:?}, vesting_address_key: {:?}, vesting_duration: {:?} }}",
+            "VestingInfo {{ vesting_type: {:?}, vesting_address_key: {:?}, vesting_duration: {:?}, vesting_period: {:?} }}",
             self.vesting_type,
             self.maybe_vesting_address_key,
-            self.vesting_duration.map(|d| d.whole_seconds() as u64) // Displaying just seconds if duration is Some
+            self.vesting_duration.map(|d| d.whole_seconds() as u64),
+            self.vesting_period
         )
     }
 
@@ -67,6 +69,7 @@ impl VestingInfo {
         let (vesting_type, rem) = VestingType::from_bytes(bytes)?;
         let (maybe_vesting_address_key, rem) = Option::<Key>::from_bytes(rem)?;
         let (vesting_duration_opt, rem) = Option::<u64>::from_bytes(rem)?;
+        let (vesting_period, rem) = u64::from_bytes(rem)?;
 
         let vesting_duration = vesting_duration_opt.map(|seconds| Duration::new(seconds as i64, 0));
 
@@ -75,6 +78,7 @@ impl VestingInfo {
                 vesting_type,
                 maybe_vesting_address_key,
                 vesting_duration,
+                vesting_period,
             },
             rem,
         ))
@@ -370,6 +374,7 @@ pub fn get_vesting_info() -> Vec<VestingInfo> {
                 &vesting_info.vesting_type.to_string(),
             ),
             vesting_duration: vesting_info.vesting_duration,
+            vesting_period: vesting_info.vesting_period,
         })
         .collect()
 }
@@ -401,22 +406,10 @@ fn get_vesting_status(
 
     #[allow(clippy::match_single_binding)]
     let vested_amount = match vesting_info.vesting_type {
-        // VestingType::Treasury => {
-        //     // Treasury has an immediate unlock at the end of the lock duration
-        //     if let Some(duration) = vesting_info.vesting_duration {
-        //         if elapsed_time >= duration.whole_seconds() as u64 {
-        //             total_amount
-        //         } else {
-        //             U256::zero()
-        //         }
-        //     } else {
-        //         U256::zero() // If duration is None, default to no vesting
-        //     }
-        // }
         _ => {
             // Linear vesting for other types
             if let Some(duration) = vesting_info.vesting_duration {
-                calculate_linear_vesting(start_time, duration, total_amount, current_time)
+                calculate_linear_vesting(start_time, duration, total_amount, current_time, vesting_info.vesting_period)
             } else {
                 U256::zero() // Default to no vesting if duration is None
             }
@@ -427,12 +420,12 @@ fn get_vesting_status(
     let time_until_next_release = if is_fully_vested {
         Duration::ZERO
     } else if let Some(duration) = vesting_info.vesting_duration {
-        calculate_time_until_next_release(start_time, duration, current_time)
+        calculate_time_until_next_release(start_time, duration, current_time, vesting_info.vesting_period)
     } else {
         Duration::ZERO
     };
 
-    let monthly_release_amout = if let Some(duration) = vesting_info.vesting_duration {
+    let monthly_release_amount = if let Some(duration) = vesting_info.vesting_duration {
         if !is_fully_vested {
             calculate_monthly_release(total_amount, duration)
         } else {
@@ -448,7 +441,16 @@ fn get_vesting_status(
     )
     .unwrap_or_default();
 
-    let available_for_release_amount = vested_amount.saturating_sub(released_amount);
+    let time_since_start = current_time.saturating_sub(start_time);
+    let periods_elapsed = time_since_start / vesting_info.vesting_period;
+
+    let expected_released_amount = monthly_release_amount * U256::from(periods_elapsed);
+
+    let available_for_release_amount = if expected_released_amount >= released_amount {
+        expected_released_amount.saturating_sub(released_amount).min(monthly_release_amount)
+    } else {
+        U256::zero()
+    };
 
     VestingStatus::new(
         vesting_info.vesting_type,
@@ -458,7 +460,7 @@ fn get_vesting_status(
         vesting_info.vesting_duration.unwrap_or(Duration::ZERO),
         Duration::new(start_time as i64, 0),
         time_until_next_release,
-        monthly_release_amout,
+        monthly_release_amount,
         released_amount,
         available_for_release_amount,
     )
@@ -488,6 +490,7 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
             vesting_type,
             vesting_duration: vesting_info.vesting_duration,
             maybe_vesting_address_key,
+            vesting_period: vesting_info.vesting_period,
         },
         start_time,
         total_amount,
@@ -497,53 +500,41 @@ fn get_vesting_status_by_type(vesting_type: VestingType) -> VestingStatus {
 
 #[cfg(feature = "contract-support")]
 pub fn get_vesting_transfer(owner: Key, requested_amount: U256) -> bool {
-    // Retrieve vesting information for the owner address
-
     let vesting_info = match get_vesting_info_by_key(&owner) {
         Some(info) => info,
         None => return true, // If owner is not a vesting address, allow transfer
     };
 
-    let start_time =
-        get_dictionary_value_from_key(DICT_START_TIME, &vesting_info.vesting_type.to_string())
-            .unwrap_or_default();
-    let total_amount =
-        get_dictionary_value_from_key(DICT_VESTING_AMOUNT, &vesting_info.vesting_type.to_string())
-            .unwrap_or_default();
+    let start_time = get_dictionary_value_from_key(DICT_START_TIME, &vesting_info.vesting_type.to_string()).unwrap_or_default();
+    let total_amount = get_dictionary_value_from_key(DICT_VESTING_AMOUNT, &vesting_info.vesting_type.to_string()).unwrap_or_default();
     let current_time: u64 = get_blocktime().into();
-    // Retrieve the vesting status for the owner
+
     let status = get_vesting_status(&vesting_info, start_time, total_amount, current_time);
 
+    if status.is_fully_vested {
+        return true; // Allow transfer if fully vested
+    }
+
+    if requested_amount > status.available_for_release_amount {
+        return false; // Reject if requesting more than available
+    }
+
+    // Update transferred amount if all checks pass
     let cumulative_transferred: U256 = get_dictionary_value_from_key(
         DICT_TRANSFERRED_AMOUNT,
         &vesting_info.vesting_type.to_string(),
     )
     .unwrap_or_default();
 
-    // let cowl_cep18_contract_package_hash = get_cowl_cep18_contract_package_hash();
-    // let current_balance = get_current_balance_for_key(cowl_cep18_contract_package_hash, &owner);
-    // runtime::print(&format!(" current_balance {:?}", current_balance));
+    let new_transferred_amount = cumulative_transferred + requested_amount;
 
-    // Ensure the cumulative transfer + requested transfer does not exceed vested amount
-    let new_transfered_amount = cumulative_transferred + requested_amount;
-
-    // runtime::print(&format!("status {:?}", status));
-    // runtime::print(&format!("status.vested_amount {:?}", status.vested_amount));
-    // runtime::print(&format!(
-    //     "new_transfered_amount {:?}",
-    //     new_transfered_amount
-    // ));
-
-    if status.vesting_duration > Duration::ZERO && (status.vested_amount >= new_transfered_amount) {
-        set_dictionary_value_for_key(
-            DICT_TRANSFERRED_AMOUNT,
-            &vesting_info.vesting_type.to_string(),
-            &new_transfered_amount,
-        );
-        update_vesting_status(vesting_info.vesting_type);
-        return true;
-    }
-    status.is_fully_vested
+    set_dictionary_value_for_key(
+        DICT_TRANSFERRED_AMOUNT,
+        &vesting_info.vesting_type.to_string(),
+        &new_transferred_amount,
+    );
+    update_vesting_status(vesting_info.vesting_type);
+    true
 }
 
 #[cfg(feature = "contract-support")]
@@ -561,23 +552,22 @@ pub fn get_current_balance_for_key(
 
 #[cfg(feature = "contract-support")]
 fn calculate_time_until_next_release(
-    start_time: u64,
-    duration: Duration,
-    current_time: u64,
+    start_time: u64,        // Milliseconds
+    duration: Duration,   // Duration should remain in seconds
+    current_time: u64,      // Milliseconds
+    vesting_period_ms: u64 // Vesting period in milliseconds
 ) -> Duration {
-    let elapsed_time = current_time.saturating_sub(start_time);
-    let total_duration_secs = duration.whole_seconds() as u64; // Convert `Duration` to seconds
+    let elapsed_time_ms = current_time.saturating_sub(start_time);
+    let total_duration_ms = duration.whole_milliseconds() as u64;
 
-    if elapsed_time >= total_duration_secs {
-        Duration::ZERO
-    } else {
-        // Calculate the next release point (start of the next month in seconds)
-        let next_release_point = ((elapsed_time / MONTH_IN_SECONDS) + 1) * MONTH_IN_SECONDS;
-        let remaining_time_secs = next_release_point.saturating_sub(elapsed_time);
-
-        // Convert remaining time back to `Duration`
-        Duration::seconds(remaining_time_secs as i64)
+    if elapsed_time_ms >= total_duration_ms {
+        return Duration::ZERO;
     }
+
+    let time_in_period_ms = elapsed_time_ms % vesting_period_ms;
+    let remaining_ms = vesting_period_ms - time_in_period_ms;
+
+    Duration::milliseconds(remaining_ms as i64)
 }
 
 #[cfg(feature = "contract-support")]
@@ -601,16 +591,24 @@ fn calculate_linear_vesting(
     duration: Duration,
     total_amount: U256,
     current_time: u64,
+    vesting_period: u64,
 ) -> U256 {
     let elapsed_time = current_time.saturating_sub(start_time);
     let duration_as_secs = duration.whole_seconds() as u64;
+
     if elapsed_time >= duration_as_secs {
-        total_amount
-    } else {
-        let total_duration_secs = U256::from(duration_as_secs);
-        let elapsed_secs = U256::from(elapsed_time);
-        (total_amount * elapsed_secs) / total_duration_secs
-    }
+        return total_amount;
+    } 
+
+    // Calculate complete periods elapsed
+    let periods_elapsed = elapsed_time / vesting_period;
+    let total_periods = duration_as_secs / vesting_period;
+
+    // Calculate per-period release amount
+    let amount_per_period = total_amount / U256::from(total_periods);
+
+    // Release for complete periods
+    amount_per_period * U256::from(periods_elapsed)
 }
 
 #[cfg(feature = "contract-support")]
