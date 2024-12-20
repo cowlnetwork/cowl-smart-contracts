@@ -478,9 +478,7 @@ fn get_vesting_status(
             .saturating_sub(released_amount)
             .min(total_amount)
     } else if expected_released_amount >= released_amount {
-        expected_released_amount
-            .saturating_sub(released_amount)
-            .min(release_amount_per_period) // !!! TODO CHECK, this prevents full release but adds a cap
+        expected_released_amount.saturating_sub(released_amount)
     } else {
         U256::zero()
     };

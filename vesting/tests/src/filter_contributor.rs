@@ -265,10 +265,11 @@ fn should_allow_half_transfer_for_non_vesting_address_at_half_time() {
     let sender = *test_accounts
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
-    // //! TODO CHECK
-    let transfer_amount = vesting_status.release_amount_per_period;
 
     let test_duration = DURATION_CONTRIBUTOR_VESTING.map(|d| (d.whole_seconds() / 2) as u64);
+
+    let transfer_amount = vesting_status.release_amount_per_period
+        * (test_duration.unwrap() / VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64);
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -298,8 +299,7 @@ fn should_allow_half_transfer_for_non_vesting_address_at_half_time() {
 
     assert!(vesting_status.vested_amount > U256::zero());
     assert_eq!(vesting_status.released_amount, transfer_amount);
-    // //! TODO CHECK
-    assert_eq!(vesting_status.available_for_release_amount, transfer_amount);
+    assert_eq!(vesting_status.available_for_release_amount, U256::zero());
     assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,
