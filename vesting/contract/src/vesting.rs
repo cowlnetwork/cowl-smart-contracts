@@ -473,7 +473,9 @@ fn get_vesting_status(
     };
 
     let available_for_release_amount = if is_fully_vested {
-        expected_released_amount.saturating_sub(released_amount)
+        expected_released_amount
+            .saturating_sub(released_amount)
+            .min(total_amount)
     } else if expected_released_amount >= released_amount {
         expected_released_amount
             .saturating_sub(released_amount)
