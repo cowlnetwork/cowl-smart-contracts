@@ -5,7 +5,7 @@ use crate::{
 use crate::{
     constants::{
         ARG_ADDRESS, DICT_ADDRESSES, DICT_START_TIME, DICT_TRANSFERRED_AMOUNT, DICT_VESTING_AMOUNT,
-        DICT_VESTING_INFO, DICT_VESTING_STATUS, ENTRY_POINT_BALANCE_OF, MONTH_IN_SECONDS,
+        DICT_VESTING_INFO, DICT_VESTING_STATUS, ENTRY_POINT_BALANCE_OF,
     },
     enums::{VESTING_INFO, VESTING_PERCENTAGES},
     error::VestingError,
@@ -600,16 +600,16 @@ fn calculate_time_until_next_release(
 
 #[cfg(feature = "contract-support")]
 fn calculate_release_per_period(total_amount: U256, duration: Duration) -> U256 {
-    let months = (duration.whole_seconds() as u64)
-        .checked_div(MONTH_IN_SECONDS)
+    let periods = (duration.whole_seconds() as u64)
+        .checked_div(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64)
         .unwrap_or(0);
 
-    if months == 0 || total_amount.is_zero() {
+    if periods == 0 || total_amount.is_zero() {
         return U256::zero();
     }
 
     total_amount
-        .checked_div(U256::from(months))
+        .checked_div(U256::from(periods))
         .unwrap_or(U256::zero())
 }
 
