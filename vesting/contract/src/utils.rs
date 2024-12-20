@@ -9,7 +9,7 @@ use alloc::{format, string::String};
 use casper_contract::{
     contract_api::{
         self,
-        runtime::{blake2b, get_blocktime, get_call_stack, get_key, revert},
+        runtime::{blake2b, get_call_stack, get_key, revert},
         storage,
     },
     ext_ffi,
@@ -25,7 +25,7 @@ use casper_types::{
 };
 #[cfg(feature = "contract-support")]
 use core::{convert::TryInto, mem::MaybeUninit};
-use time::{Duration, OffsetDateTime};
+use time::Duration;
 
 #[cfg(feature = "contract-support")]
 pub enum Caller {
@@ -301,30 +301,13 @@ pub fn get_cowl_cep18_contract_package_hash() -> ContractPackageHash {
     )
 }
 
-pub fn display_human_readable_date(duration: Duration) -> String {
-    #[cfg(feature = "contract-support")]
-    let start_time_in_ms: u64 = get_blocktime().into();
+pub fn display_human_readable_duration(duration: Duration) -> String {
+    let total_seconds = duration.whole_seconds();
 
-    #[cfg(not(feature = "contract-support"))]
-    let start_time_in_ms: u64 = 0_u64;
+    let days = total_seconds / 86_400; // 1 day = 86,400 seconds
+    let hours = (total_seconds % 86_400) / 3_600; // 1 hour = 3,600 seconds
+    let minutes = (total_seconds % 3_600) / 60; // 1 minute = 60 seconds
+    let seconds = total_seconds % 60; // Remaining seconds
 
-    let current_time = start_time_in_ms / 1000;
-
-    let future_time_in_secs = current_time + duration.whole_seconds() as u64;
-
-    let future_time = OffsetDateTime::from_unix_timestamp(future_time_in_secs as i64)
-        .expect("Failed to convert timestamp");
-
-    // Manually formatting the date
-    let year = future_time.year();
-    let month = future_time.month();
-    let day = future_time.day();
-    let hour = future_time.hour();
-    let minute = future_time.minute();
-    let second = future_time.second();
-
-    format!(
-        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-        year, month, day, hour, minute, second
-    )
+    format!("{}d {:02}h {:02}m {:02}s", days, hours, minutes, seconds)
 }

@@ -1,5 +1,6 @@
 use crate::{
-    constants::VESTING_PERIOD_IN_SECONDS, enums::VestingType, utils::display_human_readable_date,
+    constants::VESTING_PERIOD_IN_SECONDS, enums::VestingType,
+    utils::display_human_readable_duration,
 };
 #[cfg(feature = "contract-support")]
 use crate::{
@@ -177,7 +178,7 @@ impl VestingStatus {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, start_time: {:?}, time_until_next_release: {:?}, date_next_release_date: {:?}, release_amount_per_period: {:?}, released_amount: {:?}, elapsed_periods: {:?}, available_for_release_amount: {:?} , total_to_release_amount: {:?} }}",
+            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, start_time: {:?}, time_until_next_release: {:?}, until_next_release: {:?}, release_amount_per_period: {:?}, released_amount: {:?}, elapsed_periods: {:?}, available_for_release_amount: {:?} , total_to_release_amount: {:?} }}",
             self.vesting_type,
             self.total_amount,
             self.vested_amount,
@@ -185,7 +186,7 @@ impl VestingStatus {
             self.vesting_duration.whole_seconds(),  // Displaying seconds for duration
             self.start_time.whole_seconds(),  // Displaying seconds for duration
             self.time_until_next_release.whole_seconds(),  // Displaying seconds for duration
-            display_human_readable_date(self.time_until_next_release),
+            display_human_readable_duration(self.time_until_next_release),
             self.release_amount_per_period,
             self.released_amount,
             self.elapsed_periods,
