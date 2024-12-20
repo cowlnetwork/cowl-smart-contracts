@@ -138,7 +138,14 @@ fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("55000000000000001").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let transfer_amount = vesting_status.release_amount_per_period + 1;
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -201,7 +208,14 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("55000000000000000").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let transfer_amount = vesting_status.release_amount_per_period;
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -402,7 +416,7 @@ fn should_allow_full_transfer_at_regular_periods() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = vesting_status.total_amount / 12;
+    let transfer_amount = vesting_status.release_amount_per_period;
 
     for month in 1..=12 {
         cowl_cep18_token_transfer(
@@ -443,7 +457,7 @@ fn should_allow_full_transfer_at_regular_periods() {
         assert_eq!(vesting_status.available_for_release_amount, U256::zero());
         assert_eq!(vesting_status.vesting_type, vesting_type);
         assert_eq!(
-            vesting_status.total_amount / 12 * U256::from(month),
+            transfer_amount * U256::from(month),
             vesting_status.vested_amount
         );
         assert_eq!(
@@ -482,7 +496,7 @@ fn should_allow_half_transfer_at_regular_periods() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = vesting_status.total_amount / 12 / 2;
+    let transfer_amount = vesting_status.release_amount_per_period / 2;
 
     for month in 1..=12 {
         cowl_cep18_token_transfer(
@@ -520,14 +534,14 @@ fn should_allow_half_transfer_at_regular_periods() {
             vesting_status.released_amount,
             transfer_amount * U256::from(month)
         );
-        // Buggy
-        // assert_eq!(
-        //     vesting_status.available_for_release_amount,
-        //     transfer_amount * U256::from(month)
-        // );
+
+        assert_eq!(
+            vesting_status.available_for_release_amount,
+            transfer_amount * U256::from(month)
+        );
         assert_eq!(vesting_status.vesting_type, vesting_type);
         assert_eq!(
-            vesting_status.total_amount / 12 * U256::from(month),
+            vesting_status.release_amount_per_period * U256::from(month),
             vesting_status.vested_amount
         );
         assert_eq!(

@@ -138,9 +138,14 @@ fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("32083333333333334").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
 
-    dbg!(transfer_amount);
+    let transfer_amount = vesting_status.release_amount_per_period + 1;
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -202,7 +207,14 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("32083333333333333").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let transfer_amount = vesting_status.release_amount_per_period;
 
     cowl_cep18_token_transfer(
         &mut builder,

@@ -106,7 +106,7 @@ fn should_allow_transfer_for_non_vesting_address_at_time_one_period() {
 }
 
 #[test]
-fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
+fn should_not_allow_transfer_for_more_than_total_amount_at_time_one_period() {
     let (
         mut builder,
         TestContext {
@@ -124,7 +124,14 @@ fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("1100000000000000000").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let transfer_amount = vesting_status.total_amount + 1;
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -134,8 +141,7 @@ fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
         &account_user_1,
         Some(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64),
     )
-    .expect_success()
-    .commit();
+    .expect_failure();
 
     cowl_vesting_vesting_status(
         &mut builder,
@@ -155,8 +161,11 @@ fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
     );
 
     assert_eq!(vesting_status.vested_amount, U256::zero());
-    assert_eq!(vesting_status.released_amount, transfer_amount);
-    assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+    assert_eq!(vesting_status.released_amount, U256::zero());
+    assert_eq!(
+        vesting_status.available_for_release_amount,
+        vesting_status.total_amount
+    );
     assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(vesting_status.vesting_duration, Duration::ZERO);
     dbg!(vesting_status);
@@ -181,7 +190,14 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one_period() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("1100000000000000000").unwrap();
+    let vesting_status: VestingStatus = get_dictionary_value_from_key(
+        &builder,
+        &Key::from(cowl_vesting_contract_hash),
+        DICT_VESTING_STATUS,
+        &vesting_type.to_string().to_owned(),
+    );
+
+    let transfer_amount = vesting_status.total_amount;
 
     cowl_cep18_token_transfer(
         &mut builder,
