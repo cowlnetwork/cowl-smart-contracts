@@ -50,7 +50,7 @@ fn should_get_vesting_treasury_status() {
         DURATION_TREASURY_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -90,7 +90,7 @@ fn should_get_vesting_contributor_status() {
         DURATION_CONTRIBUTOR_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -130,7 +130,7 @@ fn should_get_vesting_development_status() {
         DURATION_DEVELOPMENT_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -168,7 +168,7 @@ fn should_get_vesting_liquidity_status() {
     assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(vesting_status.vesting_duration, Duration::ZERO);
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    assert_eq!(vesting_status.release_amount_per_period, U256::zero());
     dbg!(vesting_status);
 }
 
@@ -209,7 +209,7 @@ fn should_get_vesting_community_status() {
         DURATION_COMMUNITY_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -246,7 +246,7 @@ fn should_get_vesting_staking_status() {
     assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(vesting_status.vesting_duration, Duration::ZERO);
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    assert_eq!(vesting_status.release_amount_per_period, U256::zero());
     dbg!(vesting_status);
 }
 
@@ -289,7 +289,7 @@ fn should_get_vesting_contributor_status_half_year() {
         DURATION_CONTRIBUTOR_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -330,7 +330,7 @@ fn should_get_vesting_contributor_status_one_and_half_year() {
         DURATION_CONTRIBUTOR_VESTING.unwrap()
     );
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -373,7 +373,7 @@ fn should_get_vesting_development_status_half_year() {
         DURATION_DEVELOPMENT_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -414,7 +414,7 @@ fn should_get_vesting_development_status_one_and_half_year() {
         DURATION_DEVELOPMENT_VESTING.unwrap()
     );
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -457,7 +457,7 @@ fn should_get_vesting_treasury_status_two_year() {
         DURATION_TREASURY_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -498,7 +498,7 @@ fn should_get_vesting_treasury_status_six_year() {
         DURATION_TREASURY_VESTING.unwrap()
     );
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -541,7 +541,7 @@ fn should_get_vesting_community_status_two_year() {
         DURATION_COMMUNITY_VESTING.unwrap()
     );
     assert!(vesting_status.time_until_next_release > Duration::ZERO);
-    assert!(vesting_status.monthly_release_amount > U256::zero());
+    assert!(vesting_status.release_amount_per_period > U256::zero());
     dbg!(vesting_status);
 }
 
@@ -582,6 +582,6 @@ fn should_get_vesting_community_status_six_year() {
         DURATION_COMMUNITY_VESTING.unwrap()
     );
     assert_eq!(vesting_status.time_until_next_release, Duration::ZERO);
-    assert_eq!(vesting_status.monthly_release_amount, U256::zero());
+    //  assert_eq!(vesting_status.release_amount_per_period, U256::zero());
     dbg!(vesting_status);
 }

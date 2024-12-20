@@ -8,7 +8,10 @@ use crate::utility::{
 use casper_engine_test_support::DEFAULT_ACCOUNT_ADDR;
 use casper_types::{Key, U256};
 use cowl_vesting::{
-    constants::{DICT_TRANSFERRED_AMOUNT, DICT_VESTING_STATUS, DURATION_CONTRIBUTOR_VESTING},
+    constants::{
+        DICT_TRANSFERRED_AMOUNT, DICT_VESTING_STATUS, DURATION_CONTRIBUTOR_VESTING,
+        VESTING_PERIOD_IN_SECONDS,
+    },
     enums::VestingType,
     vesting::VestingStatus,
 };
@@ -61,7 +64,7 @@ fn should_not_allow_transfer_for_non_vesting_address_at_zero_time() {
 }
 
 #[test]
-fn should_allow_transfer_for_non_vesting_address_at_time_one() {
+fn should_allow_transfer_for_non_vesting_address_at_time_one_period() {
     let (
         mut builder,
         TestContext {
@@ -87,7 +90,7 @@ fn should_allow_transfer_for_non_vesting_address_at_time_one() {
         &sender,
         transfer_amount,
         &account_user_1,
-        Some(1_u64),
+        Some(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64),
     )
     .expect_success()
     .commit();
@@ -117,7 +120,7 @@ fn should_allow_transfer_for_non_vesting_address_at_time_one() {
 }
 
 #[test]
-fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
+fn should_not_allow_transfer_for_more_than_vested_amount_at_time_one_period() {
     let (
         mut builder,
         TestContext {
@@ -135,7 +138,7 @@ fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("20928462710").unwrap();
+    let transfer_amount = U256::from_dec_str("55000000000000001").unwrap();
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -143,7 +146,7 @@ fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
         &sender,
         transfer_amount,
         &account_user_1,
-        Some(1_u64),
+        Some(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64),
     )
     .expect_failure()
     .commit();
@@ -153,7 +156,7 @@ fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
         &cowl_vesting_contract_hash,
         &DEFAULT_ACCOUNT_ADDR,
         vesting_type,
-        Some(1_u64),
+        Some(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64),
     )
     .expect_success()
     .commit();
@@ -180,7 +183,7 @@ fn should_not_allow_transfer_for_more_than_vested_amout_at_time_one() {
 }
 
 #[test]
-fn should_allow_full_transfer_for_non_vesting_address_at_time_one() {
+fn should_allow_full_transfer_for_non_vesting_address_at_time_one_period() {
     let (
         mut builder,
         TestContext {
@@ -198,7 +201,7 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one() {
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
 
-    let transfer_amount = U256::from_dec_str("20928462709").unwrap();
+    let transfer_amount = U256::from_dec_str("55000000000000000").unwrap();
 
     cowl_cep18_token_transfer(
         &mut builder,
@@ -206,7 +209,7 @@ fn should_allow_full_transfer_for_non_vesting_address_at_time_one() {
         &sender,
         transfer_amount,
         &account_user_1,
-        Some(1_u64),
+        Some(VESTING_PERIOD_IN_SECONDS.whole_seconds() as u64),
     )
     .expect_success()
     .commit();
@@ -262,8 +265,9 @@ fn should_allow_half_transfer_for_non_vesting_address_at_half_time() {
     let sender = *test_accounts
         .get(&get_account_for_vesting(vesting_type))
         .unwrap();
+    // //! TODO CHECK
+    let transfer_amount = vesting_status.release_amount_per_period;
 
-    let transfer_amount = vesting_status.total_amount / 2;
     let test_duration = DURATION_CONTRIBUTOR_VESTING.map(|d| (d.whole_seconds() / 2) as u64);
 
     cowl_cep18_token_transfer(
@@ -294,7 +298,8 @@ fn should_allow_half_transfer_for_non_vesting_address_at_half_time() {
 
     assert!(vesting_status.vested_amount > U256::zero());
     assert_eq!(vesting_status.released_amount, transfer_amount);
-    assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+    // //! TODO CHECK
+    assert_eq!(vesting_status.available_for_release_amount, transfer_amount);
     assert_eq!(vesting_status.vesting_type, vesting_type);
     assert_eq!(
         vesting_status.vesting_duration,

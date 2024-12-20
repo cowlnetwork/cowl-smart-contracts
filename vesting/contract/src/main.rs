@@ -11,8 +11,8 @@ use alloc::{
 use casper_contract::{
     contract_api::{
         runtime::{
-            self, call_contract, call_versioned_contract, get_caller, get_key, get_named_arg,
-            put_key, ret, revert,
+            call_contract, call_versioned_contract, get_blocktime, get_caller, get_key,
+            get_named_arg, put_key, ret, revert,
         },
         storage,
     },
@@ -124,7 +124,7 @@ pub extern "C" fn set_cowl_cep18_contract_package() {
             .unwrap_or_revert_with(VestingError::MissingTokenContractPackage),
     );
 
-    runtime::put_key(
+    put_key(
         ARG_COWL_CEP18_CONTRACT_PACKAGE,
         storage::new_uref(cowl_cep18_contract_package_key_hash).into(),
     );
@@ -510,11 +510,14 @@ pub fn set_allocations(vesting_contract_hash_key: &Key, vesting_contract_package
             &allocation.vesting_type.to_string(),
             &recipient_balance,
         );
-        let start_time: u64 = runtime::get_blocktime().into();
+
+        let start_time_in_ms: u64 = get_blocktime().into();
+        let start_time_in_seconds = start_time_in_ms.checked_div(1000).unwrap_or_default();
+
         set_dictionary_value_for_key(
             DICT_START_TIME,
             &allocation.vesting_type.to_string(),
-            &start_time,
+            &start_time_in_seconds,
         );
 
         let _ = update_vesting_status(allocation.vesting_type);

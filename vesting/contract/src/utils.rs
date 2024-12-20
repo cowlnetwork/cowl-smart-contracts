@@ -3,12 +3,15 @@ use crate::constants::ARG_COWL_CEP18_CONTRACT_PACKAGE;
 #[cfg(feature = "contract-support")]
 use crate::error::VestingError;
 #[cfg(feature = "contract-support")]
-use alloc::string::String;
-#[cfg(feature = "contract-support")]
 use alloc::{borrow::ToOwned, string::ToString, vec, vec::Vec};
+use alloc::{format, string::String};
 #[cfg(feature = "contract-support")]
 use casper_contract::{
-    contract_api::{self, runtime, storage},
+    contract_api::{
+        self,
+        runtime::{blake2b, get_blocktime, get_call_stack, get_key, revert},
+        storage,
+    },
     ext_ffi,
     unwrap_or_revert::UnwrapOrRevert,
 };
@@ -22,6 +25,7 @@ use casper_types::{
 };
 #[cfg(feature = "contract-support")]
 use core::{convert::TryInto, mem::MaybeUninit};
+use time::{Duration, OffsetDateTime};
 
 #[cfg(feature = "contract-support")]
 pub enum Caller {
@@ -31,7 +35,7 @@ pub enum Caller {
 
 #[cfg(feature = "contract-support")]
 pub fn get_verified_caller() -> (Key, Option<Key>) {
-    let get_verified_caller: Result<Caller, VestingError> = match *runtime::get_call_stack()
+    let get_verified_caller: Result<Caller, VestingError> = match *get_call_stack()
         .iter()
         .nth_back(1)
         .to_owned()
@@ -109,7 +113,7 @@ pub fn get_optional_named_arg_with_user_errors<T: FromBytes>(
     match get_named_arg_with_user_errors::<T>(name, VestingError::Phantom, invalid) {
         Ok(val) => Some(val),
         Err(VestingError::Phantom) => None,
-        Err(_) => runtime::revert(invalid),
+        Err(_) => revert(invalid),
     }
 }
 
@@ -128,7 +132,7 @@ pub fn stringify_key<T: CLTyped>(key: Key) -> String {
     match key {
         Key::Account(account_hash) => account_hash.to_string(),
         Key::Hash(hash_addr) => ContractHash::new(hash_addr).to_string(),
-        _ => runtime::revert(VestingError::InvalidKey),
+        _ => revert(VestingError::InvalidKey),
     }
 }
 
@@ -142,7 +146,7 @@ pub fn make_dictionary_item_key<T: CLTyped + ToBytes, V: CLTyped + ToBytes>(
 
     bytes_a.append(&mut bytes_b);
 
-    let bytes = runtime::blake2b(bytes_a);
+    let bytes = blake2b(bytes_a);
     hex::encode(bytes)
 }
 
@@ -159,7 +163,7 @@ pub fn get_dictionary_value_from_key<T: CLTyped + FromBytes>(
 
     match storage::dictionary_get::<T>(seed_uref, key) {
         Ok(maybe_value) => maybe_value,
-        Err(error) => runtime::revert(error),
+        Err(error) => revert(error),
     }
 }
 
@@ -179,9 +183,7 @@ pub fn set_dictionary_value_for_key<T: CLTyped + ToBytes + Clone>(
 
 #[cfg(feature = "contract-support")]
 fn get_uref(name: &str) -> URef {
-    let key = runtime::get_key(name)
-        .ok_or(ApiError::MissingKey)
-        .unwrap_or_revert();
+    let key = get_key(name).ok_or(ApiError::MissingKey).unwrap_or_revert();
     key.try_into().unwrap_or_revert()
 }
 
@@ -208,8 +210,8 @@ fn get_key_with_user_errors(name: &str, missing: VestingError, invalid: VestingE
     };
     match api_error::result_from(ret) {
         Ok(_) => {}
-        Err(ApiError::MissingKey) => runtime::revert(missing),
-        Err(e) => runtime::revert(e),
+        Err(ApiError::MissingKey) => revert(missing),
+        Err(e) => revert(e),
     }
     key_bytes.truncate(total_bytes);
 
@@ -230,8 +232,8 @@ fn read_with_user_errors<T: CLTyped + FromBytes>(
         let ret = unsafe { ext_ffi::casper_read_value(key_ptr, key_size, value_size.as_mut_ptr()) };
         match api_error::result_from(ret) {
             Ok(_) => unsafe { value_size.assume_init() },
-            Err(ApiError::ValueNotFound) => runtime::revert(missing),
-            Err(e) => runtime::revert(e),
+            Err(ApiError::ValueNotFound) => revert(missing),
+            Err(e) => revert(e),
         }
     };
 
@@ -286,7 +288,7 @@ fn get_named_arg_size(name: &str) -> Option<usize> {
     match api_error::result_from(ret) {
         Ok(_) => Some(arg_size),
         Err(ApiError::MissingArgument) => None,
-        Err(e) => runtime::revert(e),
+        Err(e) => revert(e),
     }
 }
 
@@ -296,5 +298,33 @@ pub fn get_cowl_cep18_contract_package_hash() -> ContractPackageHash {
         ARG_COWL_CEP18_CONTRACT_PACKAGE,
         VestingError::MissingTokenContractPackage,
         VestingError::InvalidTokenContractPackage,
+    )
+}
+
+pub fn display_human_readable_date(duration: Duration) -> String {
+    #[cfg(feature = "contract-support")]
+    let start_time_in_ms: u64 = get_blocktime().into();
+
+    #[cfg(not(feature = "contract-support"))]
+    let start_time_in_ms: u64 = 0_u64;
+
+    let current_time = start_time_in_ms / 1000;
+
+    let future_time_in_secs = current_time + duration.whole_seconds() as u64;
+
+    let future_time = OffsetDateTime::from_unix_timestamp(future_time_in_secs as i64)
+        .expect("Failed to convert timestamp");
+
+    // Manually formatting the date
+    let year = future_time.year();
+    let month = future_time.month();
+    let day = future_time.day();
+    let hour = future_time.hour();
+    let minute = future_time.minute();
+    let second = future_time.second();
+
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+        year, month, day, hour, minute, second
     )
 }

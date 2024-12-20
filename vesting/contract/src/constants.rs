@@ -64,15 +64,13 @@ pub const COWL_CEP_18_TOKEN_TOTAL_SUPPLY: u64 = 5_500_000_000;
 
 // Durations
 pub const HOUR_IN_SECONDS: u64 = 60 * 60;
-pub const DAY_IN_SECONDS: u64 = 24 * HOUR_IN_SECONDS;
-pub const MONTH_IN_SECONDS: u64 = YEAR_IN_SECONDS / 12;
-pub const YEAR_IN_SECONDS: u64 = 365 * DAY_IN_SECONDS;
-// pub const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60; // A standard year in seconds
-// pub const MONTH_IN_SECONDS: u64 = YEAR_IN_SECONDS / 12; // Approximation for a month
+pub const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60; // A standard year in seconds
+pub const MONTH_IN_SECONDS: u64 = YEAR_IN_SECONDS / 12; // Approximation for a month
+
+const _ONE_HOUR_IN_SECONDS: Duration = Duration::seconds(HOUR_IN_SECONDS as i64);
+const ONE_MONTH_IN_SECONDS: Duration = Duration::seconds(MONTH_IN_SECONDS as i64);
 const ONE_YEAR_IN_SECONDS: Duration = Duration::seconds(YEAR_IN_SECONDS as i64);
-// const TWO_YEARS_IN_SECONDS: Duration = Duration::seconds(2 * YEAR_IN_SECONDS as i64);
 const FOUR_YEARS_IN_SECONDS: Duration = Duration::seconds(4 * YEAR_IN_SECONDS as i64);
-// const TEN_YEARS_IN_SECONDS: Duration = Duration::seconds(10 * YEAR_IN_SECONDS as i64);
 
 /// Lock durations for each vesting type
 pub const DURATION_LIQUIDITY_VESTING: Option<Duration> = None;
@@ -80,9 +78,7 @@ pub const DURATION_CONTRIBUTOR_VESTING: Option<Duration> = Some(ONE_YEAR_IN_SECO
 pub const DURATION_DEVELOPMENT_VESTING: Option<Duration> = Some(ONE_YEAR_IN_SECONDS);
 pub const DURATION_TREASURY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
 pub const DURATION_COMMUNITY_VESTING: Option<Duration> = Some(FOUR_YEARS_IN_SECONDS);
-
 pub const DURATION_STAKING_VESTING: Option<Duration> = None;
 
-// Vesting Periods in ms (for different scenarios)
-pub const PRODUCTION_VESTING_PERIOD: u64 = MONTH_IN_SECONDS * 1000;
-pub const TEST_VESTING_PERIOD: u64 = HOUR_IN_SECONDS * 1000;
+pub const VESTING_PERIOD_IN_SECONDS: Duration = ONE_MONTH_IN_SECONDS;
+// pub const VESTING_PERIOD_IN_SECONDS: Duration = _ONE_HOUR_IN_SECONDS;

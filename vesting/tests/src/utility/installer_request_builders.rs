@@ -240,7 +240,7 @@ pub fn cowl_vesting_vesting_status<'a>(
     );
 
     if let Some(block_time) = block_time {
-        vesting_status_request = vesting_status_request.with_block_time(block_time)
+        vesting_status_request = vesting_status_request.with_block_time(block_time * 1000)
     }
 
     builder.exec(vesting_status_request.build())
@@ -287,7 +287,7 @@ pub fn cowl_cep18_token_transfer<'a>(
     );
 
     if let Some(block_time) = block_time {
-        token_transfer_request = token_transfer_request.with_block_time(block_time)
+        token_transfer_request = token_transfer_request.with_block_time(block_time * 1000)
     }
 
     builder.exec(token_transfer_request.build())
