@@ -177,7 +177,7 @@ impl VestingStatus {
     fn fmt_inner(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, start_time: {:?}, time_until_next_release: {:?}, time_next_release_date: {:?}, release_amount_per_period: {:?}, released_amount: {:?}, elapsed_periods: {:?}, available_for_release_amount: {:?} , total_to_release_amount: {:?} }}",
+            "VestingStatus {{ vesting_type: {:?}, total_amount: {:?}, vested_amount: {:?}, is_fully_vested: {:?}, vesting_duration: {:?}, start_time: {:?}, time_until_next_release: {:?}, date_next_release_date: {:?}, release_amount_per_period: {:?}, released_amount: {:?}, elapsed_periods: {:?}, available_for_release_amount: {:?} , total_to_release_amount: {:?} }}",
             self.vesting_type,
             self.total_amount,
             self.vested_amount,
