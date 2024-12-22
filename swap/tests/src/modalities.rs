@@ -1,10 +1,10 @@
-use crate::utility::{
-    installer_request_builders::{cowl_swap_set_modalities, setup_with_args, TestContext},
-    support::get_event,
+use crate::utility::installer_request_builders::{
+    cowl_swap_set_modalities, setup_with_args, TestContext,
 };
 use casper_engine_test_support::DEFAULT_ACCOUNT_ADDR;
 use casper_types::{runtime_args, RuntimeArgs};
 use cowl_swap::{constants::ARG_EVENTS_MODE, enums::EventsMode, events::SetModalities};
+use vesting_tests::support::get_event;
 
 #[test]
 fn should_toggle_events_mode() {
@@ -14,12 +14,9 @@ fn should_toggle_events_mode() {
             cowl_swap_contract_hash,
             ..
         },
-    ) = setup_with_args(
-        runtime_args! {
-            ARG_EVENTS_MODE => false,
-        },
-        None,
-    );
+    ) = setup_with_args(runtime_args! {
+        ARG_EVENTS_MODE => false,
+    });
 
     let contract = builder
         .get_contract(cowl_swap_contract_hash)
@@ -141,12 +138,9 @@ fn should_emit_event_on_set_modalities_with_events_mode_ces() {
             cowl_swap_contract_hash,
             ..
         },
-    ) = setup_with_args(
-        runtime_args! {
-            ARG_EVENTS_MODE => false,
-        },
-        None,
-    );
+    ) = setup_with_args(runtime_args! {
+        ARG_EVENTS_MODE => false,
+    });
     let contract = builder
         .get_contract(cowl_swap_contract_hash)
         .expect("should have contract");

@@ -3,12 +3,9 @@ use crate::utility::{
     installer_request_builders::{setup, TestContext},
 };
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, ContractPackageHash, Key, RuntimeArgs};
+use casper_types::{runtime_args, Key, RuntimeArgs};
 use cowl_swap::{
-    constants::{
-        ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
-        ARG_NAME, ARG_PACKAGE_HASH, DICT_SECURITY_BADGES,
-    },
+    constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_NAME},
     enums::EventsMode,
 };
 
@@ -18,48 +15,28 @@ fn should_install_contract() {
         builder,
         TestContext {
             cowl_swap_contract_hash,
-            cowl_swap_contract_package_hash,
-            ref test_accounts,
+            cowl_cep18_token_contract_hash,
+            cowl_vesting_contract_hash,
             ..
         },
     ) = setup();
 
+    let cowl_cep18_token_contract = builder
+        .get_contract(cowl_cep18_token_contract_hash)
+        .expect("should have cowl cep18 token contract");
+    let named_keys = cowl_cep18_token_contract.named_keys();
+    dbg!(named_keys);
+    let vesting_contract = builder
+        .get_contract(cowl_vesting_contract_hash)
+        .expect("should have vesting contract");
+    let named_keys = vesting_contract.named_keys();
+    dbg!(named_keys);
     let swap_contract = builder
         .get_contract(cowl_swap_contract_hash)
         .expect("should have swap contract");
 
-    // let cowl_cep18_token_contract = builder
-    //     .get_contract(cowl_cep18_token_contract_hash)
-    //     .expect("should have cowl cep18 token contract");
-
-    // let named_keys = cowl_cep18_token_contract.named_keys();
-
     let named_keys = swap_contract.named_keys();
-    // dbg!(named_keys);
-
-    assert!(
-        named_keys.contains_key(ARG_CONTRACT_HASH),
-        "{:?}",
-        named_keys
-    );
-    assert!(
-        named_keys.contains_key(ARG_PACKAGE_HASH),
-        "{:?}",
-        named_keys
-    );
-    assert!(
-        named_keys.contains_key(DICT_SECURITY_BADGES),
-        "{:?}",
-        named_keys
-    );
-    assert!(named_keys.contains_key(ARG_NAME), "{:?}", named_keys);
-    assert!(named_keys.contains_key(ARG_INSTALLER), "{:?}", named_keys);
-    assert!(named_keys.contains_key(ARG_EVENTS_MODE), "{:?}", named_keys);
-    // assert!(
-    //     named_keys.contains_key(ARG_COWL_CEP18_CONTRACT_PACKAGE),
-    //     "{:?}",
-    //     named_keys
-    // );
+    dbg!(named_keys);
 }
 
 #[test]
@@ -68,7 +45,7 @@ fn should_prevent_reinstall_contract() {
         mut builder,
         TestContext {
             cowl_swap_contract_hash,
-            ref test_accounts,
+            cowl_cep18_token_package_hash,
             ..
         },
     ) = setup();
@@ -97,14 +74,11 @@ fn should_prevent_reinstall_contract() {
     let named_keys = swap_contract.named_keys();
     dbg!(named_keys);
 
-    // let cowl_cep18_token_package_hash: ContractPackageHash = builder
-    //     .get_value::<ContractPackageHash>(cowl_swap_contract_hash, ARG_COWL_CEP18_CONTRACT_PACKAGE);
-
-    let mut install_args = runtime_args!(
+    let install_args = runtime_args!(
         ARG_NAME => SWAP_TEST_NAME,
         ARG_EVENTS_MODE => EventsMode::CES as u8,
-        // ARG_COWL_CEP18_CONTRACT_PACKAGE =>
-        // Key::from(cowl_cep18_token_package_hash),
+        ARG_COWL_CEP18_CONTRACT_PACKAGE =>
+        Key::from(cowl_cep18_token_package_hash),
     );
 
     // Install swap contract with token

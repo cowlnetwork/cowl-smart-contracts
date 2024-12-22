@@ -32,10 +32,11 @@ use super::constants::{
 };
 
 #[derive(Clone)]
-pub(crate) struct TestContext {
-    pub(crate) cowl_vesting_contract_hash: ContractHash,
-    pub(crate) cowl_cep18_token_contract_hash: ContractHash,
-    pub(crate) test_accounts: HashMap<[u8; 32], AccountHash>,
+pub struct TestContext {
+    pub cowl_vesting_contract_hash: ContractHash,
+    pub cowl_cep18_token_contract_hash: ContractHash,
+    pub cowl_cep18_token_package_hash: ContractPackageHash,
+    pub test_accounts: HashMap<[u8; 32], AccountHash>,
 }
 
 impl Drop for TestContext {
@@ -53,7 +54,7 @@ pub fn setup() -> (InMemoryWasmTestBuilder, TestContext) {
     setup_with_args(default_args(), None)
 }
 
-pub fn setup_with_args(
+pub(crate) fn setup_with_args(
     mut install_args: RuntimeArgs,
     test_accounts: Option<HashMap<[u8; 32], AccountHash>>,
 ) -> (InMemoryWasmTestBuilder, TestContext) {
@@ -195,6 +196,7 @@ pub fn setup_with_args(
     let test_context = TestContext {
         cowl_vesting_contract_hash,
         cowl_cep18_token_contract_hash,
+        cowl_cep18_token_package_hash,
         test_accounts,
     };
 

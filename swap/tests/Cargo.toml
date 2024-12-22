@@ -1,16 +1,17 @@
 [package]
-name = "tests"
+name = "swap-tests"
 version = "0.1.0"
 edition = "2021"
 
 [dev-dependencies]
 cowl-swap = { path = "../contract", default-features = false }
-casper-engine-test-support = { version = "7.0.3", features = ["test-support"] }
+vesting-tests = { path = "../../vesting/tests", features = ["test-support"] }
+casper-engine-test-support = { version = "7.0.3" }
 casper-execution-engine = "7.0.3"
 casper-types = "4.0.1"
 casper-event-standard = { version = "0.5.0", default-features = false }
 
 [lib]
-name = "tests"
+name = "swap_tests"
 bench = false
 doctest = false

@@ -3,7 +3,6 @@ use crate::utility::{
         SWAP_CONTRACT_KEY_NAME, SWAP_CONTRACT_VERSION, SWAP_CONTRACT_WASM, SWAP_TEST_NAME,
     },
     installer_request_builders::{setup, TestContext},
-    support::get_event,
 };
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, ContractHash, Key, RuntimeArgs};
@@ -11,6 +10,7 @@ use cowl_swap::{
     constants::{ARG_CONTRACT_HASH, ARG_NAME, ARG_UPGRADE_FLAG},
     events::Upgrade,
 };
+use vesting_tests::support::get_event;
 
 #[test]
 fn should_upgrade_and_update_account_contract_contexts() {

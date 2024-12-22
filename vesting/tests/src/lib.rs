@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod install;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 mod utility;
 
 #[cfg(test)]
@@ -27,6 +27,17 @@ mod filter_community;
 
 #[cfg(test)]
 mod filter_liquidity;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use utility::constants;
+#[cfg(any(test, feature = "test-support"))]
+pub use utility::installer_request_builders;
+#[cfg(any(test, feature = "test-support"))]
+pub use utility::installer_request_builders::setup;
+#[cfg(any(test, feature = "test-support"))]
+pub use utility::installer_request_builders::TestContext as TestContextVesting;
+#[cfg(any(test, feature = "test-support"))]
+pub use utility::support;
 
 #[cfg(test)]
 mod tests {

@@ -1,15 +1,13 @@
 use casper_types::{runtime_args, Key, RuntimeArgs};
 use cowl_swap::{constants::ADMIN_LIST, enums::EventsMode, error::SwapError};
-
-use std::collections::HashMap;
-
-use crate::utility::{
+use vesting_tests::{
     constants::{ACCOUNT_USER_1, ACCOUNT_USER_2},
-    installer_request_builders::{
-        cowl_swap_change_security, cowl_swap_set_modalities, setup, setup_with_args, SecurityLists,
-        TestContext,
-    },
-    support::{assert_expected_error, create_dummy_key_pair, fund_account},
+    support::{assert_expected_error, create_dummy_key_pair},
+};
+
+use crate::utility::installer_request_builders::{
+    cowl_swap_change_security, cowl_swap_set_modalities, setup, setup_with_args, SecurityLists,
+    TestContext,
 };
 
 #[test]
@@ -45,8 +43,6 @@ fn should_test_security_no_rights() {
 fn should_test_security_rights() {
     let (_, public_key_account_user_1) = create_dummy_key_pair(ACCOUNT_USER_1);
     let account_user_1 = public_key_account_user_1.to_account_hash();
-    let mut test_accounts = HashMap::new();
-    test_accounts.insert(ACCOUNT_USER_1, account_user_1);
 
     let (
         mut builder,
@@ -55,15 +51,9 @@ fn should_test_security_rights() {
             ref test_accounts,
             ..
         },
-    ) = setup_with_args(
-        runtime_args! {
-            ADMIN_LIST => vec![Key::from(account_user_1)]
-        },
-        Some(test_accounts),
-    );
-
-    // account_user_1 was created before genesis and is not yet funded so fund it
-    fund_account(&mut builder, account_user_1);
+    ) = setup_with_args(runtime_args! {
+        ADMIN_LIST => vec![Key::from(account_user_1)]
+    });
 
     let owner = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
     let set_modalities_call = cowl_swap_set_modalities(
@@ -98,8 +88,6 @@ fn should_test_security_rights() {
 fn should_test_change_security() {
     let (_, public_key_account_user_1) = create_dummy_key_pair(ACCOUNT_USER_1);
     let account_user_1 = public_key_account_user_1.to_account_hash();
-    let mut test_accounts = HashMap::new();
-    test_accounts.insert(ACCOUNT_USER_1, account_user_1);
 
     let (
         mut builder,
@@ -108,12 +96,9 @@ fn should_test_change_security() {
             ref test_accounts,
             ..
         },
-    ) = setup_with_args(
-        runtime_args! {
-            ADMIN_LIST => vec![Key::from(account_user_1)],
-        },
-        None,
-    );
+    ) = setup_with_args(runtime_args! {
+        ADMIN_LIST => vec![Key::from(account_user_1)],
+    });
 
     let account_user_2 = *test_accounts.get(&ACCOUNT_USER_2).unwrap();
 
