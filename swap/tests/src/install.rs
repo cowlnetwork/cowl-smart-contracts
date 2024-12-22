@@ -5,7 +5,10 @@ use crate::utility::{
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, Key, RuntimeArgs};
 use cowl_swap::{
-    constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_NAME},
+    constants::{
+        ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
+        ARG_NAME, ARG_PACKAGE_HASH, DICT_SECURITY_BADGES,
+    },
     enums::EventsMode,
 };
 
@@ -36,6 +39,31 @@ fn should_install_contract() {
         .expect("should have swap contract");
 
     let named_keys = swap_contract.named_keys();
+
+    assert!(
+        named_keys.contains_key(ARG_CONTRACT_HASH),
+        "{:?}",
+        named_keys
+    );
+    assert!(
+        named_keys.contains_key(ARG_PACKAGE_HASH),
+        "{:?}",
+        named_keys
+    );
+    assert!(
+        named_keys.contains_key(DICT_SECURITY_BADGES),
+        "{:?}",
+        named_keys
+    );
+    assert!(named_keys.contains_key(ARG_NAME), "{:?}", named_keys);
+    assert!(named_keys.contains_key(ARG_INSTALLER), "{:?}", named_keys);
+    assert!(named_keys.contains_key(ARG_EVENTS_MODE), "{:?}", named_keys);
+    assert!(
+        named_keys.contains_key(ARG_COWL_CEP18_CONTRACT_PACKAGE),
+        "{:?}",
+        named_keys
+    );
+
     dbg!(named_keys);
 }
 

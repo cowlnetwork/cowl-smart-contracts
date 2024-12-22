@@ -213,13 +213,13 @@ fn install_contract(name: &str) {
         get_optional_named_arg_with_user_errors(ARG_EVENTS_MODE, SwapError::InvalidEventsMode)
             .unwrap_or_default();
 
-    // let cowl_cep18_contract_package_key: Key = get_named_arg(ARG_COWL_CEP18_CONTRACT_PACKAGE);
+    let cowl_cep18_contract_package_key: Key = get_named_arg(ARG_COWL_CEP18_CONTRACT_PACKAGE);
 
-    // let cowl_cep18_contract_package_hash = ContractPackageHash::from(
-    //     cowl_cep18_contract_package_key
-    //         .into_hash()
-    //         .unwrap_or_revert_with(SwapError::InvalidTokenContractPackage),
-    // );
+    let cowl_cep18_contract_package_hash = ContractPackageHash::from(
+        cowl_cep18_contract_package_key
+            .into_hash()
+            .unwrap_or_revert_with(SwapError::InvalidTokenContractPackage),
+    );
 
     let keys = vec![
         (ARG_NAME.to_string(), storage::new_uref(name).into()),
@@ -228,10 +228,10 @@ fn install_contract(name: &str) {
             storage::new_uref(events_mode).into(),
         ),
         (ARG_INSTALLER.to_string(), get_caller().into()),
-        // (
-        //     ARG_COWL_CEP18_CONTRACT_PACKAGE.to_string(),
-        //     storage::new_uref(cowl_cep18_contract_package_hash).into(),
-        // ),
+        (
+            ARG_COWL_CEP18_CONTRACT_PACKAGE.to_string(),
+            storage::new_uref(cowl_cep18_contract_package_hash).into(),
+        ),
     ];
 
     let mut named_keys = NamedKeys::new();

@@ -7,8 +7,8 @@ use casper_types::{
 };
 use cowl_swap::{
     constants::{
-        ADMIN_LIST, ARG_EVENTS_MODE, ARG_NAME, ENTRY_POINT_CHANGE_SECURITY,
-        ENTRY_POINT_SET_MODALITIES, NONE_LIST,
+        ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_NAME,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_SET_MODALITIES, NONE_LIST,
     },
     enums::EventsMode,
 };
@@ -44,7 +44,7 @@ pub fn setup() -> (InMemoryWasmTestBuilder, TestContext) {
     setup_with_args(default_args())
 }
 
-pub fn setup_with_args(install_args: RuntimeArgs) -> (InMemoryWasmTestBuilder, TestContext) {
+pub fn setup_with_args(mut install_args: RuntimeArgs) -> (InMemoryWasmTestBuilder, TestContext) {
     let (
         mut builder,
         TestContextVesting {
@@ -56,7 +56,11 @@ pub fn setup_with_args(install_args: RuntimeArgs) -> (InMemoryWasmTestBuilder, T
         },
     ) = setup_vesting();
 
-    // dbg!(test_accounts.clone());
+    // Install vesting contract with token package as install ARG
+    let _ = install_args.insert(
+        ARG_COWL_CEP18_CONTRACT_PACKAGE.to_string(),
+        Key::from(cowl_cep18_token_package_hash),
+    );
 
     // Install SWAP contract with token
     let install_request_contract = ExecuteRequestBuilder::standard(
