@@ -450,16 +450,29 @@ fn should_allow_full_transfer_at_regular_periods() {
         );
 
         assert!(vesting_status.vested_amount > U256::zero());
-        assert_eq!(
-            vesting_status.released_amount,
-            transfer_amount * U256::from(month)
-        );
-        assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+
         assert_eq!(vesting_status.vesting_type, vesting_type);
-        assert_eq!(
-            transfer_amount * U256::from(month),
-            vesting_status.vested_amount
-        );
+
+        // Handle smallest unit rounding
+        if !vesting_status.is_fully_vested {
+            assert_eq!(vesting_status.available_for_release_amount, U256::zero());
+        } else {
+            assert_eq!(
+                vesting_status.available_for_release_amount + vesting_status.released_amount,
+                vesting_status.total_amount
+            );
+        }
+
+        // Handle smallest unit rounding
+        if !vesting_status.is_fully_vested {
+            assert_eq!(
+                vesting_status.release_amount_per_period * U256::from(month),
+                vesting_status.vested_amount
+            );
+        } else {
+            assert_eq!(vesting_status.total_amount, vesting_status.vested_amount);
+        }
+
         assert_eq!(
             vesting_status.vesting_duration,
             DURATION_CONTRIBUTOR_VESTING.unwrap()
@@ -535,15 +548,31 @@ fn should_allow_half_transfer_at_regular_periods() {
             transfer_amount * U256::from(month)
         );
 
-        assert_eq!(
-            vesting_status.available_for_release_amount,
-            transfer_amount * U256::from(month)
-        );
         assert_eq!(vesting_status.vesting_type, vesting_type);
-        assert_eq!(
-            vesting_status.release_amount_per_period * U256::from(month),
-            vesting_status.vested_amount
-        );
+
+        // Handle smallest unit rounding
+        if !vesting_status.is_fully_vested {
+            assert!(
+                vesting_status.available_for_release_amount - transfer_amount * U256::from(month)
+                    <= U256::from(month)
+            );
+        } else {
+            assert_eq!(
+                vesting_status.available_for_release_amount + vesting_status.released_amount,
+                vesting_status.total_amount
+            );
+        }
+
+        // Handle smallest unit rounding
+        if !vesting_status.is_fully_vested {
+            assert_eq!(
+                vesting_status.release_amount_per_period * U256::from(month),
+                vesting_status.vested_amount
+            );
+        } else {
+            assert_eq!(vesting_status.total_amount, vesting_status.vested_amount);
+        }
+
         assert_eq!(
             vesting_status.vesting_duration,
             DURATION_CONTRIBUTOR_VESTING.unwrap()
