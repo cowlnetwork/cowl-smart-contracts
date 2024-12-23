@@ -165,8 +165,8 @@ pub fn get_vesting_duration(vesting_type: VestingType) -> Option<Duration> {
 
 pub const VESTING_PERCENTAGES: &[(VestingType, u8)] = &[
     (VestingType::Liquidity, 20),
-    (VestingType::Contributor, 12),
-    (VestingType::Development, 10),
+    (VestingType::Contributor, 10),
+    (VestingType::Development, 12),
     (VestingType::Treasury, 30),
     (VestingType::Community, 28),
     (VestingType::Staking, 0),
