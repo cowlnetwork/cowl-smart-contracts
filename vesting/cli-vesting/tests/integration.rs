@@ -176,11 +176,11 @@ mod tests_async {
     async fn test_transfer_command() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let from = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let to = "01868e06026ba9c8695f6f3bb10d44782004dbc144ff65017cf484436f9cf7b0f6";
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("transfer")
@@ -209,11 +209,11 @@ mod tests_async {
     async fn test_transfer_command_treasury_recipient() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let from = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let to = "Treasury";
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("transfer")
@@ -242,11 +242,11 @@ mod tests_async {
     async fn test_transfer_command_treasury_recipient_account_hash() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let from = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let to = "account-hash-31dfd6356d4be001607bd2d6b163c9b23967873a849a96813781674cf5e4d96b";
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("transfer")
@@ -275,11 +275,11 @@ mod tests_async {
     async fn test_increase_allowance_key_spender() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let owner = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let owner = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let spender = "01868e06026ba9c8695f6f3bb10d44782004dbc144ff65017cf484436f9cf7b0f6";
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("increase-allowance")
@@ -455,12 +455,12 @@ mod tests_async {
     async fn test_transfer_from_key_spender() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let owner = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let owner = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let spender = "01868e06026ba9c8695f6f3bb10d44782004dbc144ff65017cf484436f9cf7b0f6";
         let recipient = "01bfe707f56b46172965fd9e557d32582e5daf677b786bc44c5a584a5956962cea";
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("increase-allowance")
@@ -516,14 +516,14 @@ mod tests_async {
     async fn test_transfer_from_key_spender_recipient_as_vesting_type() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let owner = "016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"; // Community
+        let owner = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
         let spender = "Treasury";
         let spender_key = "011540c4793aaae429ba1c4234d28f81602f8ea9a6ee2faca0841064b1c00777aa";
-        let recipient = "Liquidity";
+        let recipient = "Community";
 
         let amount = "100000000000";
 
-        let base64_key = "MC4CAQAwBQYDK2VwBCIEIPZsIcOa1F3PpF8SoOjIaJ1qIrsraqj2APBA1pZV0N+R";
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
 
         cmd.arg("increase-allowance")
