@@ -12,18 +12,21 @@ use casper_contract::{
     contract_api::{
         runtime::{self, call_contract, get_caller, get_key, get_named_arg, put_key, revert},
         storage,
+        system::create_purse,
     },
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    contracts::NamedKeys, runtime_args, ContractHash, ContractPackageHash, Key, RuntimeArgs,
+    contracts::NamedKeys, runtime_args, system::handle_payment::ARG_PURSE, ContractHash,
+    ContractPackageHash, Key, RuntimeArgs,
 };
 use cowl_swap::{
     constants::{
-        ADMIN_LIST, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE,
-        ARG_INSTALLER, ARG_NAME, ARG_PACKAGE_HASH, ARG_UPGRADE_FLAG, DICT_SECURITY_BADGES,
-        ENTRY_POINT_INSTALL, ENTRY_POINT_UPGRADE, NONE_LIST, PREFIX_ACCESS_KEY_NAME,
-        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
+        ADMIN_LIST, ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_END_TIME,
+        ARG_EVENTS_MODE, ARG_INSTALLER, ARG_NAME, ARG_PACKAGE_HASH, ARG_START_TIME,
+        ARG_UPGRADE_FLAG, DICT_SECURITY_BADGES, ENTRY_POINT_INSTALL, ENTRY_POINT_UPGRADE,
+        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+        PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     enums::EventsMode,
@@ -38,6 +41,24 @@ use cowl_swap::{
         get_stored_value_with_user_errors, get_verified_caller,
     },
 };
+
+#[no_mangle]
+pub extern "C" fn cspr_to_cowl() {}
+
+#[no_mangle]
+pub extern "C" fn cowl_to_cspr() {}
+
+#[no_mangle]
+pub extern "C" fn update_times() {}
+
+#[no_mangle]
+pub extern "C" fn withdraw_cspr() {}
+
+#[no_mangle]
+pub extern "C" fn withdraw_cowl() {}
+
+#[no_mangle]
+pub extern "C" fn deposit_cowl() {}
 
 #[no_mangle]
 pub extern "C" fn set_cowl_cep18_contract_package() {
@@ -188,6 +209,9 @@ pub extern "C" fn install() {
     }
 
     change_sec_badge(&badge_map);
+
+    let contract_purse = create_purse();
+    put_key(ARG_PURSE, contract_purse.into());
 }
 
 #[no_mangle]
@@ -221,6 +245,9 @@ fn install_contract(name: &str) {
             .unwrap_or_revert_with(SwapError::InvalidTokenContractPackage),
     );
 
+    let start_time: u64 = runtime::get_named_arg(ARG_START_TIME);
+    let end_time: u64 = runtime::get_named_arg(ARG_END_TIME);
+
     let keys = vec![
         (ARG_NAME.to_string(), storage::new_uref(name).into()),
         (
@@ -228,6 +255,11 @@ fn install_contract(name: &str) {
             storage::new_uref(events_mode).into(),
         ),
         (ARG_INSTALLER.to_string(), get_caller().into()),
+        (
+            ARG_START_TIME.to_string(),
+            storage::new_uref(start_time).into(),
+        ),
+        (ARG_END_TIME.to_string(), storage::new_uref(end_time).into()),
         (
             ARG_COWL_CEP18_CONTRACT_PACKAGE.to_string(),
             storage::new_uref(cowl_cep18_contract_package_hash).into(),

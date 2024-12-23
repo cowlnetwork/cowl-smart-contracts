@@ -15,7 +15,7 @@ fn should_toggle_events_mode() {
             ..
         },
     ) = setup_with_args(runtime_args! {
-        ARG_EVENTS_MODE => false,
+        ARG_EVENTS_MODE => false
     });
 
     let contract = builder

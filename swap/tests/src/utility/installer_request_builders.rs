@@ -7,8 +7,8 @@ use casper_types::{
 };
 use cowl_swap::{
     constants::{
-        ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_NAME,
-        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_SET_MODALITIES, NONE_LIST,
+        ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_END_TIME, ARG_EVENTS_MODE, ARG_NAME,
+        ARG_START_TIME, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_SET_MODALITIES, NONE_LIST,
     },
     enums::EventsMode,
 };
@@ -33,10 +33,12 @@ impl Drop for TestContext {
     fn drop(&mut self) {}
 }
 
-fn default_args() -> RuntimeArgs {
+pub fn default_args() -> RuntimeArgs {
     runtime_args! {
         ARG_NAME => SWAP_TEST_NAME,
         ARG_EVENTS_MODE => EventsMode::CES as u8,
+        ARG_START_TIME => 0_u64,
+        ARG_END_TIME => 86400_u64,
     }
 }
 
@@ -165,6 +167,16 @@ fn merge_args(install_args: RuntimeArgs) -> RuntimeArgs {
     if merged_args.get(ARG_EVENTS_MODE).is_none() {
         if let Some(default_name_value) = default_args().get(ARG_EVENTS_MODE) {
             merged_args.insert_cl_value(ARG_EVENTS_MODE, default_name_value.clone());
+        }
+    }
+    if merged_args.get(ARG_START_TIME).is_none() {
+        if let Some(default_name_value) = default_args().get(ARG_START_TIME) {
+            merged_args.insert_cl_value(ARG_START_TIME, default_name_value.clone());
+        }
+    }
+    if merged_args.get(ARG_END_TIME).is_none() {
+        if let Some(default_name_value) = default_args().get(ARG_END_TIME) {
+            merged_args.insert_cl_value(ARG_END_TIME, default_name_value.clone());
         }
     }
     merged_args
