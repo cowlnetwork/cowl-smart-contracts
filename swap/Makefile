@@ -13,6 +13,11 @@ build-contract:
 setup-test: build-contract
 	mkdir -p tests/wasm
 	cp ./target/wasm32-unknown-unknown/release/cowl_swap.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/deposit_cspr_session.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/deposit_cowl_session.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/cspr_to_cowl_session.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/cowl_to_cspr_session.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/balance_cowl_session.wasm tests/wasm
 	cp ../vesting/target/wasm32-unknown-unknown/release/cowl_vesting.wasm tests/wasm
 	cp ../casper/cep18/target/wasm32-unknown-unknown/release/cowl_cep18.wasm tests/wasm
 

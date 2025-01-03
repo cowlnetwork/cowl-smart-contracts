@@ -6,7 +6,7 @@ use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, Key, RuntimeArgs};
 use cowl_swap::{
     constants::{
-        ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_EVENTS_MODE, ARG_INSTALLER,
+        ARG_CONTRACT_HASH, ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH, ARG_EVENTS_MODE, ARG_INSTALLER,
         ARG_NAME, ARG_PACKAGE_HASH, DICT_SECURITY_BADGES,
     },
     enums::EventsMode,
@@ -59,7 +59,7 @@ fn should_install_contract() {
     assert!(named_keys.contains_key(ARG_INSTALLER), "{:?}", named_keys);
     assert!(named_keys.contains_key(ARG_EVENTS_MODE), "{:?}", named_keys);
     assert!(
-        named_keys.contains_key(ARG_COWL_CEP18_CONTRACT_PACKAGE),
+        named_keys.contains_key(ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH),
         "{:?}",
         named_keys
     );
@@ -105,7 +105,7 @@ fn should_prevent_reinstall_contract() {
     let install_args = runtime_args!(
         ARG_NAME => SWAP_TEST_NAME,
         ARG_EVENTS_MODE => EventsMode::CES as u8,
-        ARG_COWL_CEP18_CONTRACT_PACKAGE =>
+        ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH =>
         Key::from(cowl_cep18_token_package_hash),
     );
 

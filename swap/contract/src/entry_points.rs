@@ -1,10 +1,11 @@
 //! Contains definition of the entry points.
 use crate::constants::{
     ADMIN_LIST, ARG_AMOUNT, ARG_CONTRACT_HASH, ARG_END_TIME, ARG_EVENTS_MODE, ARG_PURSE,
-    ARG_RECIPIENT, ARG_START_TIME, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_COWL_TO_CSPR,
-    ENTRY_POINT_CSPR_TO_COWL, ENTRY_POINT_DEPOSIT_COWL, ENTRY_POINT_INSTALL,
-    ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_UPDATE_TIMES, ENTRY_POINT_UPGRADE,
-    ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR, NONE_LIST,
+    ARG_RECIPIENT, ARG_START_TIME, ENTRY_POINT_BALANCE_COWL, ENTRY_POINT_BALANCE_CSPR,
+    ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_COWL_TO_CSPR, ENTRY_POINT_CSPR_TO_COWL,
+    ENTRY_POINT_DEPOSIT_CSPR, ENTRY_POINT_INSTALL, ENTRY_POINT_SET_MODALITIES,
+    ENTRY_POINT_UPDATE_TIMES, ENTRY_POINT_UPGRADE, ENTRY_POINT_WITHDRAW_COWL,
+    ENTRY_POINT_WITHDRAW_CSPR, NONE_LIST,
 };
 use alloc::{boxed::Box, string::String, vec, vec::Vec};
 use casper_types::{CLType, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Parameter};
@@ -80,11 +81,31 @@ pub fn withdraw_cowl() -> EntryPoint {
     )
 }
 
-pub fn deposit_cowl() -> EntryPoint {
+pub fn deposit_cspr() -> EntryPoint {
     EntryPoint::new(
-        ENTRY_POINT_DEPOSIT_COWL,
+        ENTRY_POINT_DEPOSIT_CSPR,
         vec![Parameter::new(ARG_AMOUNT, CLType::U512)],
         CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn balance_cowl() -> EntryPoint {
+    EntryPoint::new(
+        ENTRY_POINT_BALANCE_COWL,
+        vec![],
+        CLType::U512,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
+
+pub fn balance_cspr() -> EntryPoint {
+    EntryPoint::new(
+        ENTRY_POINT_BALANCE_CSPR,
+        vec![],
+        CLType::U512,
         EntryPointAccess::Public,
         EntryPointType::Contract,
     )
@@ -130,12 +151,16 @@ pub fn generate_entry_points() -> EntryPoints {
     entry_points.add_entry_point(set_modalities());
     entry_points.add_entry_point(change_security());
 
-    entry_points.add_entry_point(cspr_to_cowl());
-    entry_points.add_entry_point(cowl_to_cspr());
     entry_points.add_entry_point(update_times());
-    entry_points.add_entry_point(withdraw_cspr());
+
     entry_points.add_entry_point(withdraw_cowl());
-    entry_points.add_entry_point(deposit_cowl());
+    entry_points.add_entry_point(balance_cowl());
+    entry_points.add_entry_point(cspr_to_cowl());
+
+    entry_points.add_entry_point(withdraw_cspr());
+    entry_points.add_entry_point(deposit_cspr());
+    entry_points.add_entry_point(balance_cspr());
+    entry_points.add_entry_point(cowl_to_cspr());
 
     entry_points
 }

@@ -3,12 +3,16 @@ use casper_engine_test_support::{
     ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_ADDR,
 };
 use casper_types::{
-    account::AccountHash, runtime_args, ContractHash, ContractPackageHash, Key, RuntimeArgs,
+    account::AccountHash, runtime_args, ContractHash, ContractPackageHash, Key, RuntimeArgs, U256,
+    U512,
 };
 use cowl_swap::{
     constants::{
-        ADMIN_LIST, ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_END_TIME, ARG_EVENTS_MODE, ARG_NAME,
-        ARG_START_TIME, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_SET_MODALITIES, NONE_LIST,
+        ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH,
+        ARG_COWL_SWAP_CONTRACT_PACKAGE_HASH, ARG_END_TIME, ARG_EVENTS_MODE, ARG_NAME,
+        ARG_START_TIME, ENTRY_POINT_BALANCE_COWL, ENTRY_POINT_BALANCE_CSPR,
+        ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_SET_MODALITIES, ENTRY_POINT_UPDATE_TIMES,
+        ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR, NONE_LIST,
     },
     enums::EventsMode,
 };
@@ -17,7 +21,11 @@ use std::collections::HashMap;
 use vesting_tests::setup as setup_vesting;
 use vesting_tests::TestContextVesting;
 
-use super::constants::{SWAP_CONTRACT_KEY_NAME, SWAP_CONTRACT_PACKAGE_HASH_KEY_NAME};
+use super::constants::{
+    SWAP_BALANCE_COWL_SESSION_WASM, SWAP_CONTRACT_KEY_NAME, SWAP_CONTRACT_PACKAGE_HASH_KEY_NAME,
+    SWAP_COWL_TO_CSPR_SESSION_WASM, SWAP_CSPR_TO_COWL_SESSION_WASM, SWAP_DEPOSIT_COWL_SESSION_WASM,
+    SWAP_DEPOSIT_CSPR_SESSION_WASM,
+};
 
 #[derive(Clone)]
 pub(crate) struct TestContext {
@@ -60,7 +68,7 @@ pub fn setup_with_args(mut install_args: RuntimeArgs) -> (InMemoryWasmTestBuilde
 
     // Install vesting contract with token package as install ARG
     let _ = install_args.insert(
-        ARG_COWL_CEP18_CONTRACT_PACKAGE.to_string(),
+        ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH.to_string(),
         Key::from(cowl_cep18_token_package_hash),
     );
 
@@ -154,6 +162,194 @@ pub fn cowl_swap_change_security<'a>(
     )
     .build();
     builder.exec(change_security_request)
+}
+
+pub fn cowl_swap_update_times<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    cowl_swap: &'a ContractHash,
+    new_start_time: u64,
+    new_end_time: u64,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let update_times_request = ExecuteRequestBuilder::contract_call_by_hash(
+        *DEFAULT_ACCOUNT_ADDR,
+        *cowl_swap,
+        ENTRY_POINT_UPDATE_TIMES,
+        runtime_args! {
+            ARG_START_TIME => new_start_time,
+            ARG_END_TIME => new_end_time,
+        },
+    )
+    .build();
+    builder.exec(update_times_request)
+}
+
+pub fn cowl_swap_deposit_cowl<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_cep18_contract_package_key: &'a ContractPackageHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U256,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let deposit_cowl_request = ExecuteRequestBuilder::standard(
+        *sender_account,
+        SWAP_DEPOSIT_COWL_SESSION_WASM,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+            ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH => Key::from(*cowl_cep18_contract_package_key),
+            ARG_COWL_SWAP_CONTRACT_PACKAGE_HASH => Key::from(*cowl_swap_contract_package_hash)
+        },
+    )
+    .build();
+    builder.exec(deposit_cowl_request)
+}
+
+pub fn cowl_swap_deposit_cspr<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U512,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let swap_deposit_cspr_request = ExecuteRequestBuilder::standard(
+        *sender_account,
+        SWAP_DEPOSIT_CSPR_SESSION_WASM,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+            ARG_COWL_SWAP_CONTRACT_PACKAGE_HASH => Key::from(*cowl_swap_contract_package_hash)
+        },
+    )
+    .build();
+
+    builder.exec(swap_deposit_cspr_request)
+}
+
+pub fn cowl_swap_balance_cspr<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let withdraw_cspr_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *sender_account,
+        *cowl_swap_contract_package_hash,
+        None,
+        ENTRY_POINT_BALANCE_CSPR,
+        runtime_args! {},
+    )
+    .build();
+    builder.exec(withdraw_cspr_request)
+}
+
+pub fn cowl_swap_balance_cowl<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let withdraw_cowl_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *sender_account,
+        *cowl_swap_contract_package_hash,
+        None,
+        ENTRY_POINT_BALANCE_COWL,
+        runtime_args! {},
+    )
+    .build();
+    builder.exec(withdraw_cowl_request)
+}
+
+pub fn cowl_cep18_token_balance_cowl<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_cep18_token_package_hash: &'a ContractPackageHash,
+    address: &'a Key,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let withdraw_cowl_request = ExecuteRequestBuilder::standard(
+        *sender_account,
+        SWAP_BALANCE_COWL_SESSION_WASM,
+        runtime_args! {
+            ARG_ADDRESS => address,
+            ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH => Key::from(*cowl_cep18_token_package_hash)
+
+        },
+    )
+    .build();
+    builder.exec(withdraw_cowl_request)
+}
+
+pub fn cowl_swap_withdraw_cowl<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U256,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let withdraw_cowl_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *sender_account,
+        *cowl_swap_contract_package_hash,
+        None,
+        ENTRY_POINT_WITHDRAW_COWL,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+        },
+    )
+    .build();
+    builder.exec(withdraw_cowl_request)
+}
+
+pub fn cowl_swap_withdraw_cspr<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U512,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let withdraw_cspr_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *sender_account,
+        *cowl_swap_contract_package_hash,
+        None,
+        ENTRY_POINT_WITHDRAW_CSPR,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+        },
+    )
+    .build();
+    builder.exec(withdraw_cspr_request)
+}
+
+pub fn cowl_swap_cspr_to_cowl<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U512,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let cspr_to_cowl_request = ExecuteRequestBuilder::standard(
+        *sender_account,
+        SWAP_CSPR_TO_COWL_SESSION_WASM,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+            ARG_COWL_SWAP_CONTRACT_PACKAGE_HASH => Key::from(*cowl_swap_contract_package_hash)
+
+        },
+    )
+    .build();
+
+    builder.exec(cspr_to_cowl_request)
+}
+
+pub fn cowl_swap_cowl_to_cspr<'a>(
+    builder: &'a mut InMemoryWasmTestBuilder,
+    sender_account: &'a AccountHash,
+    cowl_cep18_contract_package_hash: &'a ContractPackageHash,
+    cowl_swap_contract_package_hash: &'a ContractPackageHash,
+    amount: U256,
+) -> &'a mut InMemoryWasmTestBuilder {
+    let cowl_to_cspr_request = ExecuteRequestBuilder::standard(
+        *sender_account,
+        SWAP_COWL_TO_CSPR_SESSION_WASM,
+        runtime_args! {
+            ARG_AMOUNT => amount,
+            ARG_COWL_CEP18_CONTRACT_PACKAGE_HASH => Key::from(*cowl_cep18_contract_package_hash),
+            ARG_COWL_SWAP_CONTRACT_PACKAGE_HASH => Key::from(*cowl_swap_contract_package_hash)
+
+        },
+    )
+    .build();
+    builder.exec(cowl_to_cspr_request)
 }
 
 fn merge_args(install_args: RuntimeArgs) -> RuntimeArgs {

@@ -37,6 +37,18 @@ pub enum SwapError {
     InvalidInstaller = 24,
     InvalidTokenContractPackage = 25,
     MissingTokenContractPackage = 26,
+    InvalidAmount = 27,
+    InvalidTimeWindow = 28,
+    MissingPurse = 29,
+    InvalidPurseTransfer = 30,
+    InvalidRate = 31,
+    BelowMinimumSwap = 32,
+    SwapNotActive = 33,
+    SwapExpired = 34,
+    MissingStartTime = 35,
+    InvalidStartTime = 36,
+    MissingEndTime = 37,
+    InvalidEndTime = 38,
 }
 
 impl From<SwapError> for ApiError {

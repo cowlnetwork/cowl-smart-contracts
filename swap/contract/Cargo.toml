@@ -20,6 +20,41 @@ bench = false
 doctest = false
 test = false
 
+[[bin]]
+name = "deposit_cspr_session"
+path = "src/deposit_cspr_session.rs"
+bench = false
+doctest = false
+test = false
+
+[[bin]]
+name = "deposit_cowl_session"
+path = "src/deposit_cowl_session.rs"
+bench = false
+doctest = false
+test = false
+
+[[bin]]
+name = "cspr_to_cowl_session"
+path = "src/cspr_to_cowl_session.rs"
+bench = false
+doctest = false
+test = false
+
+[[bin]]
+name = "cowl_to_cspr_session"
+path = "src/cowl_to_cspr_session.rs"
+bench = false
+doctest = false
+test = false
+
+[[bin]]
+name = "balance_cowl_session"
+path = "src/balance_cowl_session.rs"
+bench = false
+doctest = false
+test = false
+
 [profile.release]
 codegen-units = 1
 lto = true
