@@ -256,6 +256,13 @@ pub enum Commands {
         )]
         amount: String,
     },
+
+    /// Fund and retrieve the balance of a vesting or public key.
+    #[command(
+        name = "upgrade-events",
+        about = "Upgrade and enable evensts (specific upgrade 01/2025)"
+    )]
+    UpgradeEvents,
 }
 
 pub async fn run() {
@@ -432,6 +439,7 @@ pub async fn run() {
             )
             .await
         }
+        Commands::UpgradeEvents => commands::upgrade_events::print_upgrade_events().await,
     }
 }
 
@@ -558,6 +566,7 @@ impl Display for Commands {
 
                 write!(f, "{}", message)
             }
+            Commands::UpgradeEvents => write!(f, "Upgrade and enable Events"),
         }
     }
 }

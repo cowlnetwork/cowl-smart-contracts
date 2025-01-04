@@ -14,6 +14,7 @@ pub const DEFAULT_COWL_CEP_18_TOKEN_NAME: &str = "cowl_cep18";
 pub const DEFAULT_COWL_VESTING_NAME: &str = "cowl_vesting";
 
 const DEFAULT_COWL_VESTING_CALL_PAYMENT_AMOUNT: &str = "350000000"; // 0.35 CSPR
+const DEFAULT_COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT: &str = "1200000000"; // 1.20 CSPR
 const DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: &str = "2500000000"; // 2.5 CSPR
 
 pub const PAYMENT_TRANSFER_AMOUNT: &str = "100000000"; // 0.10 CSPR
@@ -64,6 +65,11 @@ pub static COWL_VESTING_CALL_PAYMENT_AMOUNT: Lazy<String> = Lazy::new(|| {
 pub static COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT: Lazy<String> = Lazy::new(|| {
     env::var("COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT")
         .unwrap_or_else(|_| DEFAULT_COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT.to_string())
+});
+
+pub static COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT: Lazy<String> = Lazy::new(|| {
+    env::var("COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT")
+        .unwrap_or_else(|_| DEFAULT_COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT.to_string())
 });
 
 pub const WASM_PATH: &str = "../tests/wasm/";

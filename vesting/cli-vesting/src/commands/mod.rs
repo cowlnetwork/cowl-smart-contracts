@@ -7,3 +7,4 @@ pub mod info;
 pub mod status;
 pub mod transfer;
 pub mod transfer_from;
+pub mod upgrade_events;

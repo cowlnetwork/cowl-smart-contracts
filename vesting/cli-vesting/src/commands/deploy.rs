@@ -76,6 +76,11 @@ static ARGS_VESTING_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
             "type": "String",
             "value": *COWL_VESTING_NAME
         },
+        {
+            "name": ARG_EVENTS_MODE,
+            "type": "U8",
+            "value": EventsMode::CES as u8
+        },
     ]))
 });
 
@@ -114,7 +119,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
             }
         } else {
             log::info!("You chose not to upgrade {}", contract_cep18_hash);
-            process::exit(0);
+            return Ok(());
         }
     }
 
@@ -169,10 +174,17 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
         process::exit(1)
     }
 
-    log::info!(
-        "Wait deploy_hash for token install {}",
-        deploy_hash_as_string
-    );
+    if !contract_cep18_hash.is_empty() {
+        log::info!(
+            "Wait deploy_hash for token upgrade {}",
+            deploy_hash_as_string
+        );
+    } else {
+        log::info!(
+            "Wait deploy_hash for token install {}",
+            deploy_hash_as_string
+        );
+    }
 
     let event_parse_result: EventParseResult = sdk()
         .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
@@ -260,7 +272,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
                 "You chose not to upgrade vesting contract at {}",
                 contract_vesting_hash
             );
-            process::exit(0);
+            return Ok(());
         }
     }
 
@@ -287,27 +299,29 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
 
     {
         let mut args_vesting_json = ARGS_VESTING_JSON.lock().await;
-        let config_lock = CONFIG_LOCK.lock().await;
-        if let Some(config) = config_lock.as_ref() {
-            for (vesting_type, (key_pair, maybe_vesting_info)) in config {
-                if let Some(_vesting_info) = maybe_vesting_info {
-                    if let Some(array) = args_vesting_json.as_array_mut() {
-                        array.push(json!({
-                            "name": *vesting_type,
-                            "type": "Key",
-                            "value": key_pair.public_key.to_account_hash().to_formatted_string()
-                        }));
+        if contract_vesting_hash.is_empty() {
+            let config_lock = CONFIG_LOCK.lock().await;
+            if let Some(config) = config_lock.as_ref() {
+                for (vesting_type, (key_pair, maybe_vesting_info)) in config {
+                    if let Some(_vesting_info) = maybe_vesting_info {
+                        if let Some(array) = args_vesting_json.as_array_mut() {
+                            array.push(json!({
+                                "name": *vesting_type,
+                                "type": "Key",
+                                "value": key_pair.public_key.to_account_hash().to_formatted_string()
+                            }));
+                        }
                     }
                 }
             }
-        }
-        drop(config_lock);
-        if let Some(array) = args_vesting_json.as_array_mut() {
-            array.push(json!({
-                "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
-                "type": "Key",
-                "value": cowl_cep18_token_package_hash
-            }));
+            drop(config_lock);
+            if let Some(array) = args_vesting_json.as_array_mut() {
+                array.push(json!({
+                    "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
+                    "type": "Key",
+                    "value": cowl_cep18_token_package_hash
+                }));
+            }
         }
         session_params.set_session_args_json(&args_vesting_json.to_string());
     }
@@ -342,10 +356,17 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         process::exit(1)
     }
 
-    log::info!(
-        "Wait deploy_hash for vesting install {}",
-        deploy_hash_as_string
-    );
+    if !contract_vesting_hash.is_empty() {
+        log::info!(
+            "Wait deploy_hash for vesting upgrade {}",
+            deploy_hash_as_string
+        );
+    } else {
+        log::info!(
+            "Wait deploy_hash for vesting install {}",
+            deploy_hash_as_string
+        );
+    }
     let event_parse_result: EventParseResult = sdk()
         .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
         .await

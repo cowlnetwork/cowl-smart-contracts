@@ -14,15 +14,17 @@ use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
-    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-    EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
+    COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
+    COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS,
+    TTL,
 };
 use cowl_vesting::constants::{
-    ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
-    ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_TRANSFER,
-    ENTRY_POINT_TRANSFER_FROM, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+    ARG_AMOUNT, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
+    ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_SET_MODALITIES,
+    ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM, PREFIX_CONTRACT_NAME,
+    PREFIX_CONTRACT_PACKAGE_NAME,
 };
-use cowl_vesting::enums::VestingType;
+use cowl_vesting::enums::{EventsMode, VestingType};
 use cowl_vesting::vesting::VestingData;
 use keys::format_base64_to_pem;
 use num_format::{Locale, ToFormattedString};
@@ -282,7 +284,11 @@ async fn execute_contract_entry_point(
         process::exit(1)
     }
 
-    log::info!("Wait deploy_hash for entry point {}", deploy_hash_as_string);
+    log::info!(
+        "Wait deploy_hash for entry point {} {}",
+        entry_point,
+        deploy_hash_as_string
+    );
 
     let event_parse_result: EventParseResult = sdk()
         .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
@@ -314,7 +320,7 @@ async fn execute_contract_entry_point(
     let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
 
     log::info!("Processed deploy hash {result}");
-    log::info!("Cost {cost} CSPR");
+    log::info!("Cost {cost} CSPR ({motes} motes)");
 
     (result, cost)
 }
@@ -343,6 +349,31 @@ pub async fn call_vesting_entry_point(
         format_base64_to_pem(&key_pair.private_key_base64.unwrap()),
     )
     .await;
+}
+
+pub async fn call_set_modalities_entry_point(
+    contract_vesting_hash: &str,
+    events_mdoe: EventsMode,
+) -> (String, String) {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+    let args = json!([
+        {
+            "name": ARG_EVENTS_MODE,
+            "type": "U8",
+            "value": events_mdoe as u8
+        },
+    ])
+    .to_string();
+
+    execute_contract_entry_point(
+        contract_vesting_hash,
+        ENTRY_POINT_SET_MODALITIES,
+        &args,
+        &COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.unwrap()),
+    )
+    .await
 }
 
 pub async fn call_token_transfer_entry_point(
