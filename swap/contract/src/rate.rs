@@ -14,11 +14,17 @@ pub fn validate_rate(rate: U512) -> Result<(), SwapError> {
     if rate.is_zero() {
         return Err(SwapError::InvalidRate);
     }
+    if !RATE_TIERS.iter().any(|tier| tier.rate == rate) {
+        return Err(SwapError::InvalidRate);
+    }
     Ok(())
 }
 
-pub fn validate_amount(amount: U512) -> Result<(), SwapError> {
-    if amount == U512::zero() {
+pub fn validate_amount<T>(amount: T) -> Result<(), SwapError>
+where
+    T: PartialEq + From<u8> + Copy,
+{
+    if amount == T::from(0u8) {
         return Err(SwapError::InvalidAmount);
     }
     Ok(())

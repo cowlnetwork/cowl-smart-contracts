@@ -42,7 +42,8 @@ use cowl_swap::{
     error::SwapError,
     events::{
         init_events, record_event_dictionary, ChangeSecurity, CowlCep18ContractPackageUpdate,
-        Event, SetModalities, Upgrade,
+        CowlToCspr, CsprToCowl, DepositCspr, Event, SetModalities, UpdateTimes, Upgrade,
+        WithdrawCowl, WithdrawCspr,
     },
     rate::{get_swap_rate, validate_amount, validate_rate, verify_swap_active},
     security::{change_sec_badge, sec_check, SecurityBadge},
@@ -74,57 +75,87 @@ pub extern "C" fn balance_cspr() {
 #[no_mangle]
 pub extern "C" fn cspr_to_cowl() {
     verify_swap_active().unwrap_or_revert();
-    let amount: U512 = get_named_arg(ARG_AMOUNT);
-    let rate = get_swap_rate(amount).unwrap_or_revert();
-    validate_rate(rate).unwrap_or_revert();
-    let cowl_amount = amount * rate;
+
+    let cspr_amount: U512 = get_named_arg(ARG_AMOUNT);
+
+    validate_amount(cspr_amount).unwrap_or_revert();
+
+    let base_rate = get_swap_rate(cspr_amount).unwrap_or_revert();
+
+    validate_rate(base_rate).unwrap_or_revert();
+
+    let cowl_amount = cspr_amount
+        .checked_mul(base_rate)
+        .unwrap_or_revert_with(SwapError::Overflow);
+
+    let cowl_amount_u256 = U256::from_dec_str(&cowl_amount.to_string())
+        .unwrap_or_else(|_| revert(SwapError::InvalidAmount));
     validate_amount(cowl_amount).unwrap_or_revert();
+
     let source_purse: URef = get_named_arg(ARG_PURSE);
     let contract_purse = get_key(ARG_PURSE).unwrap_or_revert_with(SwapError::MissingPurse);
+
     transfer_from_purse_to_purse(
         source_purse,
         *contract_purse
             .as_uref()
             .unwrap_or_revert_with(SwapError::MissingPurse),
-        amount,
+        cspr_amount,
         None,
     )
     .unwrap_or_revert();
 
-    let (caller, _) = get_verified_caller();
+    let (recipient, _) = get_verified_caller();
 
     call_versioned_contract::<()>(
         get_cowl_cep18_contract_package_hash(),
         None,
         ENTRY_POINT_TRANSFER,
         runtime_args! {
-            ARG_RECIPIENT => caller,
-            ARG_AMOUNT => cowl_amount
+            ARG_RECIPIENT => recipient,
+            ARG_AMOUNT => cowl_amount_u256
         },
-    )
+    );
+
+    record_event_dictionary(Event::CsprToCowl(CsprToCowl {
+        source_purse,
+        recipient,
+        cowl_amount: cowl_amount_u256,
+        cspr_amount,
+        base_rate,
+    }));
 }
 
 #[no_mangle]
 pub extern "C" fn cowl_to_cspr() {
     verify_swap_active().unwrap_or_revert();
-    let amount_u256: U256 = get_named_arg(ARG_AMOUNT);
-    let amount_u512: U512 = U512::from_dec_str(&amount_u256.to_string())
+    let cowl_amount_u256: U256 = get_named_arg(ARG_AMOUNT);
+    let cowl_amount_u512: U512 = U512::from_dec_str(&cowl_amount_u256.to_string())
         .unwrap_or_else(|_| revert(SwapError::InvalidAmount));
 
-    validate_amount(amount_u512).unwrap_or_revert();
+    validate_amount(cowl_amount_u512).unwrap_or_revert();
 
     let base_rate = RATE_TIERS.first().unwrap_or_revert().rate;
     validate_rate(base_rate).unwrap_or_revert();
 
-    let cspr_amount: U512 = amount_u512 / base_rate;
+    let cspr_amount: U512 = cowl_amount_u512
+        .checked_div(base_rate)
+        .unwrap_or_revert_with(SwapError::InvalidAmount);
+
     validate_amount(cspr_amount).unwrap_or_revert();
 
-    let tax_amount = cspr_amount * TAX_RATE / U512::from(100);
-    let cspr_amount: U512 = cspr_amount - tax_amount;
+    let tax_amount = cspr_amount
+        .checked_mul(TAX_RATE)
+        .and_then(|mul_result| mul_result.checked_div(U512::from(100)))
+        .unwrap_or_revert_with(SwapError::InvalidRate);
+
+    let cspr_amount = cspr_amount
+        .checked_sub(tax_amount)
+        .unwrap_or_revert_with(SwapError::InvalidAmount);
 
     let contract_purse = get_key(ARG_PURSE).unwrap_or_revert_with(SwapError::MissingPurse);
 
-    let (caller, _) = get_verified_caller();
+    let (owner, _) = get_verified_caller();
 
     let recipient = get_key(ARG_PACKAGE_HASH).unwrap_or_revert();
 
@@ -133,9 +164,9 @@ pub extern "C" fn cowl_to_cspr() {
         None,
         ENTRY_POINT_TRANSFER_FROM,
         runtime_args! {
-            ARG_OWNER => caller,
+            ARG_OWNER => owner,
             ARG_RECIPIENT => recipient,
-            ARG_AMOUNT => amount_u256
+            ARG_AMOUNT => cowl_amount_u256
         },
     );
 
@@ -143,13 +174,22 @@ pub extern "C" fn cowl_to_cspr() {
         *contract_purse
             .as_uref()
             .unwrap_or_revert_with(SwapError::MissingPurse),
-        caller
+        owner
             .into_account()
             .unwrap_or_revert_with(SwapError::InvalidKey),
         cspr_amount,
         None,
     )
     .unwrap_or_revert_with(SwapError::InvalidPurseTransfer);
+
+    record_event_dictionary(Event::CowlToCspr(CowlToCspr {
+        owner,
+        recipient,
+        cowl_amount: cowl_amount_u256,
+        cspr_amount,
+        base_rate,
+        tax_amount,
+    }));
 }
 
 #[no_mangle]
@@ -159,20 +199,22 @@ pub extern "C" fn withdraw_cspr() {
     let amount: U512 = get_named_arg(ARG_AMOUNT);
     validate_amount(amount).unwrap_or_revert();
 
-    let (caller, _) = get_verified_caller();
+    let (recipient, _) = get_verified_caller();
     let contract_purse = get_key(ARG_PURSE).unwrap_or_revert_with(SwapError::MissingPurse);
 
     transfer_from_purse_to_account(
         *contract_purse
             .as_uref()
             .unwrap_or_revert_with(SwapError::MissingPurse),
-        caller
+        recipient
             .into_account()
             .unwrap_or_revert_with(SwapError::InvalidKey),
         amount,
         None,
     )
     .unwrap_or_revert_with(SwapError::InvalidPurseTransfer);
+
+    record_event_dictionary(Event::WithdrawCspr(WithdrawCspr { recipient, amount }));
 }
 
 #[no_mangle]
@@ -180,21 +222,21 @@ pub extern "C" fn withdraw_cowl() {
     sec_check(vec![SecurityBadge::Admin]);
 
     let amount: U256 = get_named_arg(ARG_AMOUNT);
-    if amount == U256::zero() {
-        revert(SwapError::InvalidAmount);
-    }
+    validate_amount(amount).unwrap_or_revert();
 
-    let (caller, _) = get_verified_caller();
+    let (recipient, _) = get_verified_caller();
 
     call_versioned_contract::<()>(
         get_cowl_cep18_contract_package_hash(),
         None,
         ENTRY_POINT_TRANSFER,
         runtime_args! {
-            ARG_RECIPIENT => caller,
+            ARG_RECIPIENT => recipient,
             ARG_AMOUNT => amount
         },
-    )
+    );
+
+    record_event_dictionary(Event::WithdrawCowl(WithdrawCowl { recipient, amount }));
 }
 
 #[no_mangle]
@@ -202,9 +244,7 @@ pub extern "C" fn deposit_cspr() {
     sec_check(vec![SecurityBadge::Admin]);
 
     let amount: U512 = get_named_arg(ARG_AMOUNT);
-    if amount.is_zero() {
-        revert(SwapError::InvalidAmount);
-    }
+    validate_amount(amount).unwrap_or_revert();
 
     let source_purse: URef = get_named_arg(ARG_PURSE);
     let contract_purse = get_key(ARG_PURSE).unwrap_or_revert_with(SwapError::MissingPurse);
@@ -218,6 +258,11 @@ pub extern "C" fn deposit_cspr() {
         None,
     )
     .unwrap_or_revert_with(SwapError::InvalidPurseTransfer);
+
+    record_event_dictionary(Event::DepositCspr(DepositCspr {
+        source_purse,
+        amount,
+    }));
 }
 
 #[no_mangle]
@@ -232,6 +277,10 @@ pub extern "C" fn update_times() {
     }
     put_key(ARG_START_TIME, new_uref(new_start_time).into());
     put_key(ARG_END_TIME, new_uref(new_end_time).into());
+    record_event_dictionary(Event::UpdateTimes(UpdateTimes {
+        new_start_time,
+        new_end_time,
+    }));
 }
 
 #[no_mangle]
