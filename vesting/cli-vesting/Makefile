@@ -21,6 +21,6 @@ check-lint: clippy
 	cd tests && cargo fmt -- --check
 
 clean:
-	cd contract && cargo clean
+	cargo clean
 	cd tests && cargo clean
 	rm -rf tests/wasm
