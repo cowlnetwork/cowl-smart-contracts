@@ -1,9 +1,12 @@
-use crate::utility::{
-    constants::ACCOUNT_USER_1,
-    installer_request_builders::{
-        cowl_cep18_token_transfer, cowl_vesting_vesting_status, setup, TestContext,
+use crate::{
+    support::get_event,
+    utility::{
+        constants::ACCOUNT_USER_1,
+        installer_request_builders::{
+            cowl_cep18_token_transfer, cowl_vesting_vesting_status, setup, TestContext,
+        },
+        support::{get_account_for_vesting, get_dictionary_value_from_key},
     },
-    support::{get_account_for_vesting, get_dictionary_value_from_key},
 };
 use casper_engine_test_support::DEFAULT_ACCOUNT_ADDR;
 use casper_types::{Key, U256};
@@ -13,6 +16,7 @@ use cowl_vesting::{
         VESTING_PERIOD_IN_SECONDS,
     },
     enums::VestingType,
+    events::CheckTransfer,
     vesting::VestingStatus,
 };
 
@@ -117,6 +121,20 @@ fn should_allow_transfer_for_non_vesting_address_at_time_one_period() {
         DURATION_COMMUNITY_VESTING.unwrap()
     );
     dbg!(vesting_status);
+
+    let expected_event = CheckTransfer::new(
+        Key::Account(sender),
+        Key::Account(sender),
+        Key::Account(account_user_1),
+        transfer_amount,
+        None,
+    );
+    let actual_event: CheckTransfer = get_event(&builder, &cowl_vesting_contract_hash.into(), 0);
+
+    assert_eq!(
+        actual_event, expected_event,
+        "Expected CheckTransfer event."
+    );
 }
 
 #[test]

@@ -1,15 +1,21 @@
 use casper_types::{runtime_args, Key, RuntimeArgs};
-use cowl_vesting::{constants::ADMIN_LIST, enums::EventsMode, error::VestingError};
+use cowl_vesting::{
+    constants::ADMIN_LIST, enums::EventsMode, error::VestingError, events::ChangeSecurity,
+    security::SecurityBadge,
+};
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
-use crate::utility::{
-    constants::{ACCOUNT_USER_1, ACCOUNT_USER_2},
-    installer_request_builders::{
-        cowl_vesting_change_security, cowl_vesting_set_modalities, setup, setup_with_args,
-        SecurityLists, TestContext,
+use crate::{
+    support::get_event,
+    utility::{
+        constants::{ACCOUNT_USER_1, ACCOUNT_USER_2},
+        installer_request_builders::{
+            cowl_vesting_change_security, cowl_vesting_set_modalities, setup, setup_with_args,
+            SecurityLists, TestContext,
+        },
+        support::{assert_expected_error, create_dummy_key_pair, fund_account},
     },
-    support::{assert_expected_error, create_dummy_key_pair, fund_account},
 };
 
 #[test]
@@ -130,6 +136,21 @@ fn should_test_change_security() {
     );
 
     change_security.expect_success().commit();
+
+    let expected_event = ChangeSecurity {
+        admin: Key::Account(account_user_1),
+        sec_change_map: {
+            let mut map = BTreeMap::new();
+            map.insert(Key::Account(account_user_2), SecurityBadge::Admin);
+            map
+        },
+    };
+    let actual_event: ChangeSecurity = get_event(&builder, &cowl_vesting_contract_hash.into(), 0);
+
+    assert_eq!(
+        actual_event, expected_event,
+        "Expected ChangeSecurity event."
+    );
 
     let owner = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
     let set_modalities_call = cowl_vesting_set_modalities(

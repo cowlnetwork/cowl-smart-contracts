@@ -121,7 +121,12 @@ pub fn init_events() {
     if [EventsMode::CES].contains(&events_mode)
         && get_key(casper_event_standard::EVENTS_DICT).is_none()
     {
-        let schemas = Schemas::new().with::<SetModalities>().with::<Upgrade>();
+        let schemas = Schemas::new()
+            .with::<SetModalities>()
+            .with::<Upgrade>()
+            .with::<CowlCep18ContractPackageUpdate>()
+            .with::<CheckTransfer>()
+            .with::<ChangeSecurity>();
         casper_event_standard::init(schemas);
     }
 }
