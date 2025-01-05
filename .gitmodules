@@ -1,7 +1,3 @@
-[submodule "casper/cep18"]
-    path = casper/cep18
-    url = git@github.com:cowlnetwork/cep18.git
-    branch = cowl-cep18
 [submodule "cowl-vesting"]
 	path = cowl-vesting
 	url = git@github.com:cowlnetwork/cowl-vesting.git
