@@ -2,3 +2,15 @@
     path = casper/cep18
     url = git@github.com:cowlnetwork/cep18.git
     branch = cowl-cep18
+[submodule "cowl-vesting"]
+	path = cowl-vesting
+	url = git@github.com:cowlnetwork/cowl-vesting.git
+	branch = dev
+[submodule "cowl-swap"]
+	path = cowl-swap
+	url = git@github.com:cowlnetwork/cowl-swap.git
+	branch = dev
+[submodule "cowl-cli"]
+	path = cowl-cli
+	url = git@github.com:cowlnetwork/cowl-cli.git
+	branch = dev
