@@ -38,5 +38,13 @@ jobs:
       - name: Lint wasm contracts
         run: make check-lint
 
+      - name: Casper node launcher js
+        run: |
+          git clone --branch dist_folder https://github.com/casper-network/casper-node-launcher-js.git
+          cd casper-node-launcher-js
+          npm install
+          npm run build
+          npx casper-node-launcher-js node --daemon
+
       - name: Test wasm contracts
         run: make test
