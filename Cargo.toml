@@ -1,0 +1,2 @@
+[workspace]
+members = ["cowl-cli", "cowl-vesting", "cowl-swap", "casper/cep18"]
