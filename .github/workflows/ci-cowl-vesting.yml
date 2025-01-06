@@ -1,0 +1,40 @@
+name: ci-cowl-smart-contracts
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  push: # Triggers on pushes to specific branches or tags
+    branches:
+      - dev
+    paths-ignore: # Ignore changes to Markdown files
+      - '**.md'
+  pull_request: # Triggers on pull requests to specific branches
+    branches:
+      - dev
+    paths-ignore: # Ignore changes to Markdown files in PRs
+      - '**.md'
+
+jobs:
+  ci-smart-contracts:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustfmt, clippy
+          target: wasm32-unknown-unknown
+
+      - name: Setup
+        run: make prepare
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential wabt
+
+      - name: Lint wasm contracts
+        run: make check-lint
+
+      - name: Test wasm contracts
+        run: make test
