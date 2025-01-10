@@ -10,3 +10,7 @@
 	path = casper/cep18
 	url = git@github.com:cowlnetwork/cep18.git
 	branch = cowl-cep18
+[submodule "cowl-cli"]
+	path = cowl-cli
+	url = git@github.com:cowlnetwork/cowl-cli.git
+	branch = dev
